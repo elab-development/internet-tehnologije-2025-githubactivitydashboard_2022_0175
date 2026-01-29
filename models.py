@@ -48,11 +48,12 @@ class UserRepoFollow(db.Model):
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
 
 # 5. SearchHistory(search_id, query, search_type, timestamp, user_id)
+# 5. SearchHistory(search_id, query, search_type, timestamp, user_id)
 class SearchHistory(db.Model):
-    __tablename__ = 'search_histories' # Popravljeno: dodate __
+    __tablename__ = 'search_histories'
     search_id = db.Column(db.Integer, primary_key=True)
     query = db.Column(db.String(255), nullable=False)
-    search_type = db.Column(db.String(50))
+    search_type = db.Column(db.String(50)) # npr. 'repo' ili 'user'
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
