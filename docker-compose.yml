@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    container_name: github_dashboard_db
+    environment:
+      POSTGRES_USER: elab_user
+      POSTGRES_PASSWORD: elab_password
+      POSTGRES_DB: github_stats
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
