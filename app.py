@@ -1,46 +1,34 @@
-from flask import Flask, jsonify
-from models import db, User, Repository  # Uvozimo bazu i modele iz Uninog fajla
+from flask import Flask
+from models import db, User, Repository, Activity, UserRepoFollow, SearchHistory
 
 app = Flask(__name__)
 
-# 1. Konfiguracija baze
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///baza.db'
+# --- KONFIGURACIJA ---
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://elab_user:elab_password@127.0.0.1:5432/github_stats'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# 2. Inicijalizacija baze
-db.init_app(app)
-
-# 3. Kreiranje tabela (ovo se dešava samo prvi put)
-with app.app_context():
-    db.create_all()
+# --- POVEZIVANJE ---
+db.init_app(app)  # Ovo "venčava" modele sa aplikacijom!
 
 @app.route('/')
 def home():
-    return jsonify({
-        "poruka": "Dashboard API radi, tabele su kreirane!",
-        "status": "uspeh"
-    })
+    return "<h1>Docker Postgres je online!</h1>"
 
-# Ruta za proveru da li baza radi (testiraj na: http://127.0.0.1:5000/test)
-@app.route('/test')
-def test_db():
-    # Probaćemo da izbrojimo korisnike (na početku ih ima 0)
-    broj_korisnika = User.query.count()
-    return jsonify({
-        "broj_korisnika_u_bazi": broj_korisnika
-    })
 @app.route('/dodaj-nas')
 def dodaj_nas():
-    # Proveravamo da li već postojite da ne bi bilo greške
-    postoji = User.query.filter_by(username='Anja').first()
-    if not postoji:
-        anja = User(username='Anja', email='anja@primer.com', password='123')
-        una = User(username='Una', email='una@primer.com', password='456')
-        db.session.add(anja)
-        db.session.add(una)
+    try:
+        # Čišćenje i dodavanje test podataka
+        db.session.query(User).delete()
+        db.session.add(User(username='Anja', email='anja@example.com', password='123'))
+        db.session.add(User(username='Una', email='una@example.com', password='123'))
         db.session.commit()
-        return "Anja i Una su uspesno dodate!"
-    return "Vec ste u bazi!"
+        return "Anja i Una uspešno upisane!"
+    except Exception as e:
+        db.session.rollback()
+        return f"Greška: {e}"
 
+# --- POKRETANJE ---
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    with app.app_context():
+        db.create_all()  # Pravi tabele ako ne postoje
+    app.run(host="0.0.0.0", port=5000, debug=True)
