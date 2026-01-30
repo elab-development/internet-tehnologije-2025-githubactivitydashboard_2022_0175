@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from models import db, User, Repository, Activity, UserRepoFollow, SearchHistory
+from backend.models import db, User
 from flask_cors import CORS
 from flask_migrate import Migrate
 
