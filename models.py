@@ -1,7 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
-# Ovde pravimo praznu bazu
 db = SQLAlchemy()
 
 class User(db.Model):
@@ -10,8 +9,13 @@ class User(db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
+
+    # Veze
     follows = db.relationship('UserRepoFollow', backref='user', lazy=True)
     searches = db.relationship('SearchHistory', backref='user', lazy=True)
+
+    def __repr__(self):
+        return f'<User {self.username}>'
 
 class Repository(db.Model):
     __tablename__ = 'repositories'
@@ -19,8 +23,12 @@ class Repository(db.Model):
     full_name = db.Column(db.String(150), unique=True, nullable=False)
     url = db.Column(db.String(255), nullable=False)
     last_synced_at = db.Column(db.DateTime, default=datetime.utcnow)
+
     activities = db.relationship('Activity', backref='repository', lazy=True)
     followers = db.relationship('UserRepoFollow', backref='repository', lazy=True)
+
+    def __repr__(self):
+        return f'<Repo {self.full_name}>'
 
 class Activity(db.Model):
     __tablename__ = 'activities'
@@ -29,7 +37,7 @@ class Activity(db.Model):
     event_type = db.Column(db.String(50))
     actor_username = db.Column(db.String(100))
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    payload = db.Column(db.JSON)
+    payload = db.Column(db.JSON) # Odlično za GitHub API odgovor
     summary = db.Column(db.Text)
     repo_id = db.Column(db.Integer, db.ForeignKey('repositories.repo_id'), nullable=False)
 
