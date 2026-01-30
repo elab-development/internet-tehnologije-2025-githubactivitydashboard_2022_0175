@@ -11,6 +11,15 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+  backend:
+    build: ./backend  # Ovo mora da pokazuje na folder gde je Dockerfile
+    container_name: github_dashboard_backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app # Ovo sinhronizuje kod sa kontejnerom
+    depends_on:
+      - db
 
 volumes:
   postgres_data:
