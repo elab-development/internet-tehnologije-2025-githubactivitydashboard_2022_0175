@@ -20,6 +20,18 @@ services:
       - ./backend:/app # Ovo sinhronizuje kod sa kontejnerom
     depends_on:
       - db
+  frontend:
+    build: ./frontend
+    container_name: github_dashboard_frontend
+    ports:
+      - "3000:3000" # Prvi broj je ono što kucaš u browseru (localhost:3000)
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # Ovo je bitno da Docker ne pregazi biblioteke tvojim lokalnim
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Ovo osigurava da se sajt osveži čim sačuvaš kod u DataSpell-u
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

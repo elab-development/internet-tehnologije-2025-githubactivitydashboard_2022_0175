@@ -8,7 +8,39 @@ function App() {
   const [hasSearched, setHasSearched] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
-  const [username, setUsername] = useState(""); // Čuva ono što kucaš
+  const [username, setUsername] = useState("");
+
+  // NOVI STATE ZA PODATKE SA GITHUB-A (DODAT AVATAR)
+  const [githubData, setGithubData] = useState({
+    repos: "0",
+    followers: "0",
+    gists: "0",
+    avatar: ""
+  });
+
+  // FUNKCIJA ZA DOBAVLJANJE PODATAKA
+  const handleSearch = async () => {
+    if (!username) return;
+
+    try {
+      const response = await fetch(`https://api.github.com/users/${username}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setGithubData({
+          repos: data.public_repos,
+          followers: data.followers > 999 ? (data.followers / 1000).toFixed(1) + 'k' : data.followers,
+          gists: data.public_gists,
+          avatar: data.avatar_url // SADA ČUVAMO I SLIKU
+        });
+        setHasSearched(true);
+      } else {
+        alert("User not found!");
+      }
+    } catch (error) {
+      console.error("Greška:", error);
+    }
+  };
 
   const smallLinkStyle = {
     marginTop: '20px',
@@ -78,8 +110,7 @@ function App() {
         {isGuest ? (
           <div style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
-            {/* Back dugme sada samo vraća na login i resetuje pretragu */}
-            <button onClick={() => { setIsGuest(false); setHasSearched(false); }}
+            <button onClick={() => { setIsGuest(false); setHasSearched(false); setUsername(""); }}
               style={{
                 alignSelf: 'flex-start',
                 background: 'rgba(255,255,255,0.05)',
@@ -115,6 +146,11 @@ function App() {
                 <input
                   type="text"
                   placeholder="Enter GitHub Username..."
+                  onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSearch();
+                      }
+                    }}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   style={{
@@ -129,7 +165,7 @@ function App() {
                   }}
                 />
                 <button
-                  onClick={() => setHasSearched(true)} // AKTIVIRA KARTICE
+                  onClick={handleSearch}
                   style={{
                     backgroundColor: '#1e2645',
                     color: '#f5e6d3',
@@ -146,19 +182,34 @@ function App() {
               </div>
             </div>
 
-            {/* KARTICE SE PRIKAZUJU SAMO AKO JE KLIKNUTO SEARCH */}
             {hasSearched ? (
-              <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', width: '100%', gap: '15px' }}>
-                <InfoCard title="Repositories" value="42" icon="📦" subValue="Public" />
-                <InfoCard title="Followers" value="1.2k" icon="⭐" subValue="Real-time" />
-                <InfoCard title="Public Gists" value="5" icon="🐝" subValue="Active" />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '30px' }}>
+
+                {/* PROFILNA SLIKA KOJU SMO DODALI */}
+                <img
+                  src={githubData.avatar}
+                  alt="Profile"
+                  style={{
+                    width: '120px',
+                    height: '120px',
+                    borderRadius: '50%',
+                    border: '4px solid #89cff0',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.4)'
+                  }}
+                />
+
+                <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', width: '100%', gap: '15px' }}>
+                  <InfoCard title="Repositories" value={githubData.repos} icon="📦" subValue="Public" />
+                  <InfoCard title="Followers" value={githubData.followers} icon="⭐" subValue="Real-time" />
+                  <InfoCard title="Public Gists" value={githubData.gists} icon="🐝" subValue="Active" />
+                </div>
               </div>
             ) : (
               <p style={{ opacity: 0.5, fontStyle: 'italic' }}>Enter a username to see the dashboard analytics.</p>
             )}
 
             <p style={{ marginTop: '50px', fontSize: '10px', opacity: 0.4, letterSpacing: '4px', color: '#f5e6d3' }}>
-              ★ DATA SYNCHRONIZED WITH GITHUB CORE API ★
+              ★ DATA SYNCHRONIZED WITH GITHUB API ★
             </p>
           </div>
         ) : (
