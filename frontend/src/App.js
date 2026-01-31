@@ -12,6 +12,7 @@ function App() {
   const [isLogin, setIsLogin] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
   const [username, setUsername] = useState("");
+  const [isInApp, setIsInApp] = useState(false);
 
   const [githubData, setGithubData] = useState({
     repos: "0",
@@ -49,18 +50,21 @@ function App() {
     <div className="App" style={{ backgroundColor: '#1e2645', minHeight: '100vh', color: '#f5e6d3', fontFamily: '"Georgia", serif' }}>
 
       <Navbar />
-      <Header />
 
-      <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '50px' }}>
+      {!isInApp && <Header />}
+
+      <main style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        paddingBottom: '50px',
+        marginTop: isInApp ? '60px' : '0px'
+      }}>
 
         {isGuest ? (
           <div style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
-            <button onClick={() => { setIsGuest(false); setHasSearched(false); setUsername(""); }}
-              style={{ alignSelf: 'flex-start', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(137, 207, 240, 0.2)', color: '#89cff0', padding: '8px 18px', borderRadius: '20px', cursor: 'pointer', marginBottom: '30px', fontSize: '11px', fontWeight: 'bold', letterSpacing: '1px' }}>
-              ← BACK TO AUTHENTICATION
-            </button>
-
+            {/* Prvo ide SearchBox */}
             <SearchBox
               username={username}
               setUsername={setUsername}
@@ -76,16 +80,48 @@ function App() {
             <p style={{ marginTop: '50px', fontSize: '10px', opacity: 0.4, letterSpacing: '4px', color: '#f5e6d3' }}>
               ★ DATA SYNCHRONIZED WITH GITHUB API ★
             </p>
+
+            {/* DUGME PREBAČENO NA DNO */}
+            <button
+              onClick={() => {
+                setIsGuest(false);
+                setIsInApp(false);
+                setHasSearched(false);
+                setUsername("");
+              }}
+              style={{
+                marginTop: '40px',
+                background: 'none',
+                border: '1px solid rgba(137, 207, 240, 0.3)',
+                color: '#89cff0',
+                padding: '10px 25px',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                letterSpacing: '2px',
+                textTransform: 'uppercase'
+              }}>
+              ← Back to Home
+            </button>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ backgroundColor: '#f5e6d3', padding: '30px', borderRadius: '5px', color: '#301142', width: '100%', maxWidth: '350px', boxShadow: '10px 10px 0px #89cff0' }}>
               {isLogin ? <Login /> : <Registration />}
             </div>
+
             <button onClick={() => setIsLogin(!isLogin)} style={smallLinkStyle}>
               {isLogin ? "Don't have an account? Make one!" : "You already have an account? Log in!"}
             </button>
-            <button onClick={() => setIsGuest(true)} style={{...smallLinkStyle, color: '#f5e6d3', marginTop: '10px'}}>
+
+            <button
+              onClick={() => {
+                setIsGuest(true);
+                setIsInApp(true);
+              }}
+              style={{...smallLinkStyle, color: '#f5e6d3', marginTop: '10px'}}
+            >
               Continue as a Guest
             </button>
           </div>
