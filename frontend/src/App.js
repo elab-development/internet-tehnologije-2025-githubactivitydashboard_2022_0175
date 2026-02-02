@@ -18,24 +18,54 @@ function App() {
     repos: "0",
     followers: "0",
     gists: "0",
-    avatar: ""
+    avatar: "",
+    // Dodajemo polja za Repo mod
+    isRepo: false,
+    repoName: "",
+    language: "",
+    stars: 0,
+    issues: 0
   });
 
-  const handleSearch = async () => {
+  const handleSearch = async (type = 'user') => {
     if (!username) return;
+
+    let url = `https://api.github.com/users/${username}`;
+
+    // Logika za "čišćenje" URL-a ako je izabran Repo Analyzer
+    if (type === 'repo') {
+      let repoPath = username.replace("https://github.com/", "");
+      if (repoPath.endsWith("/")) repoPath = repoPath.slice(0, -1);
+      url = `https://api.github.com/repos/${repoPath}`;
+    }
+
     try {
-      const response = await fetch(`https://api.github.com/users/${username}`);
+      const response = await fetch(url);
       const data = await response.json();
+
       if (response.ok) {
-        setGithubData({
-          repos: data.public_repos,
-          followers: data.followers > 999 ? (data.followers / 1000).toFixed(1) + 'k' : data.followers,
-          gists: data.public_gists,
-          avatar: data.avatar_url
-        });
+        if (type === 'repo') {
+          setGithubData({
+            isRepo: true,
+            repoName: data.name,
+            avatar: data.owner.avatar_url,
+            language: data.language || "N/A",
+            stars: data.stargazers_count,
+            issues: data.open_issues_count,
+            repos: data.forks_count // Broj forkovanja stavljamo u polje repos radi lakše logike
+          });
+        } else {
+          setGithubData({
+            isRepo: false,
+            repos: data.public_repos,
+            followers: data.followers > 999 ? (data.followers / 1000).toFixed(1) + 'k' : data.followers,
+            gists: data.public_gists,
+            avatar: data.avatar_url
+          });
+        }
         setHasSearched(true);
       } else {
-        alert("User not found!");
+        alert(type === 'user' ? "User not found!" : "Repository not found! Use 'owner/repo' format.");
       }
     } catch (error) {
       console.error("Greška:", error);
@@ -64,7 +94,6 @@ function App() {
         {isGuest ? (
           <div style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
-            {/* Prvo ide SearchBox */}
             <SearchBox
               username={username}
               setUsername={setUsername}
@@ -74,14 +103,13 @@ function App() {
             {hasSearched ? (
               <UserResults githubData={githubData} />
             ) : (
-              <p style={{ opacity: 0.5, fontStyle: 'italic' }}>Enter a username to see the dashboard analytics.</p>
+              <p style={{ opacity: 0.5, fontStyle: 'italic' }}>Enter a username or repo path to see the analytics.</p>
             )}
 
             <p style={{ marginTop: '50px', fontSize: '10px', opacity: 0.4, letterSpacing: '4px', color: '#f5e6d3' }}>
               ★ DATA SYNCHRONIZED WITH GITHUB API ★
             </p>
 
-            {/* DUGME PREBAČENO NA DNO */}
             <button
               onClick={() => {
                 setIsGuest(false);
