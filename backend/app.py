@@ -30,14 +30,13 @@ def home():
 def dodaj_nas():
     try:
         db.session.query(User).delete()
-        # Hešujemo lozinku "123" pre upisa u bazu
         pw = bcrypt.generate_password_hash('123').decode('utf-8')
-        db.session.add(User(username='Anja', email='anja@example.com', password=pw, role='Korisnik'))
-        db.session.add(User(username='Una', email='una@example.com', password=pw, role='Korisnik'))
+        # Vas dve postavljamo kao Admine
+        db.session.add(User(username='Anja', email='anja@example.com', password=pw, role='Admin'))
+        db.session.add(User(username='Una', email='una@example.com', password=pw, role='Admin'))
         db.session.commit()
-        return "Anja i Una uspešno upisane sa bezbednim lozinkama!"
+        return "Admini (Anja i Una) su spremni!"
     except Exception as e:
-        db.session.rollback()
         return f"Greška: {e}"
 
 
@@ -53,7 +52,7 @@ def register_user():
         username=data['username'],
         email=data['email'],
         password=hashed_pw,
-        role='Korisnik'
+        role='User'
     )
     db.session.add(new_user)
     db.session.commit()
@@ -67,7 +66,11 @@ def login():
 
     # Provera hešovane lozinke
     if user and bcrypt.check_password_hash(user.password, data['password']):
-        return jsonify({"message": "Uspešan login!", "role": user.role}), 200
+        return jsonify({
+            "message": "Uspešan login!",
+            "role": user.role,
+            "username": user.username  # <--- OVO DODAJ
+        }), 200
 
     return jsonify({"message": "Pogrešni podaci!"}), 401
 
@@ -79,6 +82,19 @@ def get_users():
     user_list = [{"id": u.user_id, "username": u.username, "role": u.role} for u in users]
     return jsonify(user_list)
 
+@app.route('/api/users/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"message": "Korisnik nije pronađen"}), 404
+
+
+    if user.username in ['Anja','Una'] :
+        return jsonify({"message": "Ne možete obrisati glavnog admina!"}), 403
+
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"message": f"Korisnik {user.username} je obrisan"})
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)

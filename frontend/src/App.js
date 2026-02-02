@@ -6,20 +6,23 @@ import Navbar from './components/Navbar';
 import Header from './components/Header';
 import SearchBox from './components/SearchBox';
 import UserResults from './components/UserResults';
+import UserTable from './components/UserTable';
 
 function App() {
   const [hasSearched, setHasSearched] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
-  const [isGuest, setIsGuest] = useState(false);
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(""); // Ovo je za unos u pretragu
+  const [loggedInName, setLoggedInName] = useState(""); // NOVO: Ime ulogovanog korisnika
   const [isInApp, setIsInApp] = useState(false);
+  const [userRole, setUserRole] = useState("guest");
+  const [showTable, setShowTable] = useState(false);
+  const [view, setView] = useState("home");
 
   const [githubData, setGithubData] = useState({
     repos: "0",
     followers: "0",
     gists: "0",
     avatar: "",
-    // Dodajemo polja za Repo mod
     isRepo: false,
     repoName: "",
     language: "",
@@ -27,12 +30,19 @@ function App() {
     issues: 0
   });
 
+  // AŽURIRANO: Prihvata i role i name sa backenda
+  const handleLoginSuccess = (role, name) => {
+    const finalRole = role === 'Korisnik' ? 'user' : role;
+    setUserRole(finalRole);
+    setLoggedInName(name); // Čuvamo pravo ime (npr. "Anja")
+    setIsInApp(true);
+    setView("home");
+  };
+
   const handleSearch = async (type = 'user') => {
     if (!username) return;
-
     let url = `https://api.github.com/users/${username}`;
 
-    // Logika za "čišćenje" URL-a ako je izabran Repo Analyzer
     if (type === 'repo') {
       let repoPath = username.replace("https://github.com/", "");
       if (repoPath.endsWith("/")) repoPath = repoPath.slice(0, -1);
@@ -42,7 +52,6 @@ function App() {
     try {
       const response = await fetch(url);
       const data = await response.json();
-
       if (response.ok) {
         if (type === 'repo') {
           setGithubData({
@@ -52,7 +61,7 @@ function App() {
             language: data.language || "N/A",
             stars: data.stargazers_count,
             issues: data.open_issues_count,
-            repos: data.forks_count // Broj forkovanja stavljamo u polje repos radi lakše logike
+            repos: data.forks_count
           });
         } else {
           setGithubData({
@@ -65,7 +74,7 @@ function App() {
         }
         setHasSearched(true);
       } else {
-        alert(type === 'user' ? "User not found!" : "Repository not found! Use 'owner/repo' format.");
+        alert("Not found!");
       }
     } catch (error) {
       console.error("Greška:", error);
@@ -79,79 +88,79 @@ function App() {
   return (
     <div className="App" style={{ backgroundColor: '#1e2645', minHeight: '100vh', color: '#f5e6d3', fontFamily: '"Georgia", serif' }}>
 
-      <Navbar />
+      <Navbar
+        isInApp={isInApp}
+        setIsInApp={setIsInApp}
+        userRole={userRole}
+        setView={setView}
+      />
 
-      {!isInApp && <Header />}
+      {view === "home" && !isInApp && !hasSearched && <Header />}
 
-      <main style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        paddingBottom: '50px',
-        marginTop: isInApp ? '60px' : '0px'
-      }}>
+      <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '50px', marginTop: '40px' }}>
 
-        {isGuest ? (
-          <div style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-
-            <SearchBox
-              username={username}
-              setUsername={setUsername}
-              handleSearch={handleSearch}
-            />
-
-            {hasSearched ? (
-              <UserResults githubData={githubData} />
-            ) : (
-              <p style={{ opacity: 0.5, fontStyle: 'italic' }}>Enter a username or repo path to see the analytics.</p>
-            )}
-
-            <p style={{ marginTop: '50px', fontSize: '10px', opacity: 0.4, letterSpacing: '4px', color: '#f5e6d3' }}>
-              ★ DATA SYNCHRONIZED WITH GITHUB API ★
-            </p>
-
-            <button
-              onClick={() => {
-                setIsGuest(false);
-                setIsInApp(false);
-                setHasSearched(false);
-                setUsername("");
-              }}
-              style={{
-                marginTop: '40px',
-                background: 'none',
-                border: '1px solid rgba(137, 207, 240, 0.3)',
-                color: '#89cff0',
-                padding: '10px 25px',
-                borderRadius: '20px',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontWeight: 'bold',
-                letterSpacing: '2px',
-                textTransform: 'uppercase'
-              }}>
+        {view === "auth" ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ backgroundColor: '#f5e6d3', padding: '30px', borderRadius: '5px', color: '#301142', width: '100%', maxWidth: '350px', boxShadow: '10px 10px 0px #89cff0' }}>
+              {isLogin ? (
+                <Login onLoginSuccess={handleLoginSuccess} />
+              ) : (
+                <Registration onRegisterSuccess={() => setIsLogin(true)} />
+              )}
+            </div>
+            <button onClick={() => setIsLogin(!isLogin)} style={smallLinkStyle}>
+              {isLogin ? "Don't have an account? Make one!" : "Back to Login"}
+            </button>
+            <button onClick={() => setView("home")} style={{...smallLinkStyle, color: '#f5e6d3', opacity: 0.7}}>
               ← Back to Home
             </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ backgroundColor: '#f5e6d3', padding: '30px', borderRadius: '5px', color: '#301142', width: '100%', maxWidth: '350px', boxShadow: '10px 10px 0px #89cff0' }}>
-              {isLogin ? <Login /> : <Registration />}
-            </div>
+          <div style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
-            <button onClick={() => setIsLogin(!isLogin)} style={smallLinkStyle}>
-              {isLogin ? "Don't have an account? Make one!" : "You already have an account? Log in!"}
-            </button>
+            {/* Admin Panel */}
+            {isInApp && userRole === 'Admin' && (
+              <div style={{ marginBottom: '20px', padding: '15px', border: '1px dashed #89cff0', borderRadius: '10px', textAlign: 'center', width: '100%', maxWidth: '600px' }}>
+                <p style={{ fontSize: '12px', color: '#89cff0', marginBottom: '10px', fontWeight: 'bold' }}>ADMIN PRIVILEGES ACTIVE</p>
+                <button
+                  onClick={() => setShowTable(!showTable)}
+                  style={{ backgroundColor: '#89cff0', color: '#1e2645', border: 'none', padding: '8px 15px', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px', textTransform: 'uppercase' }}
+                >
+                  {showTable ? "Hide Users" : "View Users"}
+                </button>
+                {showTable && <UserTable />}
+              </div>
+            )}
 
-            <button
-              onClick={() => {
-                setIsGuest(true);
-                setIsInApp(true);
-              }}
-              style={{...smallLinkStyle, color: '#f5e6d3', marginTop: '10px'}}
-            >
-              Continue as a Guest
-            </button>
+            {!isInApp && (
+              <p style={{ color: '#f5e6d3', fontSize: '12px', marginBottom: '20px', opacity: 0.6 }}>
+                 ✨ Guest Mode! Login to save history.
+              </p>
+            )}
+
+            <SearchBox username={username} setUsername={setUsername} handleSearch={handleSearch} />
+
+            {hasSearched ? (
+              <UserResults githubData={githubData} />
+            ) : (
+              <p style={{ opacity: 0.5, fontStyle: 'italic', marginTop: '20px' }}>
+                {/* AŽURIRANO: Prikazuje ime korisnika umesto role */}
+                {isInApp ? `Welcome, ${loggedInName}!` : "Enter a GitHub username or repo."}
+              </p>
+            )}
+
+            {isInApp && (
+              <button
+                onClick={() => {
+                  setIsInApp(false);
+                  setUserRole("guest");
+                  setLoggedInName(""); // Resetujemo ime na logout
+                  setShowTable(false);
+                }}
+                style={{ marginTop: '40px', background: 'none', border: '1px solid rgba(137, 207, 240, 0.3)', color: '#89cff0', padding: '10px 25px', borderRadius: '20px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase' }}>
+                Logout
+              </button>
+            )}
           </div>
         )}
       </main>

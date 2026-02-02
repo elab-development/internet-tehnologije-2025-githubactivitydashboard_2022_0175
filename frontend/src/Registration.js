@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
-function Registration() {
+// Dodajemo prop onRegisterSuccess da bismo je vratili na login posle registracije
+function Registration({ onRegisterSuccess }) {
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [status, setStatus] = useState('');
 
@@ -13,22 +14,81 @@ function Registration() {
         body: JSON.stringify(formData)
       });
       const data = await response.json();
-      setStatus(response.ok ? `Uspeh: ${data.message}` : `Greška: ${data.message}`);
+
+      if (response.ok) {
+        setStatus(`Success! Welcome ${formData.username}.`);
+        // Čekamo sekund da vidi poruku, pa je šaljemo na Login
+        setTimeout(() => {
+          if (onRegisterSuccess) onRegisterSuccess();
+        }, 1500);
+      } else {
+        setStatus(`Error: ${data.message}`);
+      }
     } catch (error) {
       setStatus('Error: Server is not available.');
     }
   };
 
+  const inputStyle = {
+    display: 'block',
+    width: '100%',
+    marginBottom: '10px',
+    padding: '8px',
+    borderRadius: '4px',
+    border: '1px solid #ccc',
+    boxSizing: 'border-box' // Da input ne izađe van okvira
+  };
+
   return (
-    <div style={{ padding: '20px', border: '1px solid #444', borderRadius: '10px', maxWidth: '300px', margin: '20px auto', backgroundColor: '#f9f9f9' }}>
-      <h3>Registration</h3>
+    <div style={{ padding: '10px', maxWidth: '300px', margin: '0 auto' }}>
+      <h3 style={{ textAlign: 'center', color: '#301142' }}>Sign Up</h3>
       <form onSubmit={handleSubmit}>
-        <input placeholder="Username" onChange={e => setFormData({...formData, username: e.target.value})} style={{display:'block', width:'100%', marginBottom:'10px'}} />
-        <input placeholder="Email" onChange={e => setFormData({...formData, email: e.target.value})} style={{display:'block', width:'100%', marginBottom:'10px'}} />
-        <input type="password" placeholder="Password" onChange={e => setFormData({...formData, password: e.target.value})} style={{display:'block', width:'100%', marginBottom:'10px'}} />
-        <button type="submit" style={{width:'100%', padding:'10px', cursor:'pointer'}}>Save</button>
+        <input
+          placeholder="Username"
+          onChange={e => setFormData({...formData, username: e.target.value})}
+          style={inputStyle}
+          required
+        />
+        <input
+          placeholder="Email"
+          type="email"
+          onChange={e => setFormData({...formData, email: e.target.value})}
+          style={inputStyle}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          onChange={e => setFormData({...formData, password: e.target.value})}
+          style={inputStyle}
+          required
+        />
+        <button
+          type="submit"
+          style={{
+            width:'100%',
+            padding:'10px',
+            cursor:'pointer',
+            backgroundColor: '#301142',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            fontWeight: 'bold'
+          }}
+        >
+          Create Account
+        </button>
       </form>
-      {status && <p>{status}</p>}
+      {status && (
+        <p style={{
+          textAlign: 'center',
+          fontSize: '14px',
+          marginTop: '10px',
+          color: status.includes('Error') ? 'red' : 'green'
+        }}>
+          {status}
+        </p>
+      )}
     </div>
   );
 }
