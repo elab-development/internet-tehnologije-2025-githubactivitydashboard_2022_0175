@@ -16,6 +16,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default='User')
+    avatar_url = db.Column(db.String(255), nullable=True)  # DODAJ OVO
 
     # Veze
     follows = db.relationship('UserRepoFollow', backref='user', lazy=True)
@@ -29,7 +30,7 @@ class User(db.Model):
 class Repository(db.Model):
     __tablename__ = 'repositories'
     repo_id = db.Column(db.Integer, primary_key=True)
-    full_name = db.Column(db.String(150), unique=True, nullable=False)
+    full_name = db.Column(db.String(255), unique=True, nullable=False)
     url = db.Column(db.String(255), nullable=False)
     last_synced_at = db.Column(db.DateTime, default=datetime.utcnow)
 
