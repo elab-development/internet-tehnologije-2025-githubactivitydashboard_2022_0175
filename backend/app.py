@@ -4,7 +4,7 @@ import os
 # Dodajemo putanju do backend foldera u Python sistem
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from flask import Flask, request, jsonify
-from models import db, User
+from app_models.models import db, User
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_bcrypt import Bcrypt
@@ -18,7 +18,7 @@ CORS(app)
 bcrypt = Bcrypt(app)
 
 # 1. KONFIGURACIJA (Sada je ispravna za Docker)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://elab_user:elab_password@db:5432/github_stats'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://elab_user:elab_password@localhost:5432/github_stats'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # 2. INICIJALIZACIJA
