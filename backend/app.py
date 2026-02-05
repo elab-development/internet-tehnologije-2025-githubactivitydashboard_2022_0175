@@ -43,7 +43,7 @@ def dodaj_nas():
         # Hešujemo lozinku "123" pre upisa u bazu
         pw = bcrypt.generate_password_hash('123').decode('utf-8')
         db.session.add(User(username='Anja', email='anja@example.com', password=pw, role='Admin'))
-        db.session.add(User(username='Una', email='una@example.com', password=pw, role='Korisnik'))
+        db.session.add(User(username='Una', email='una@example.com', password=pw, role='User'))
         db.session.commit()
         return "Anja (Admin) i Una (Korisnik) uspešno upisane!"
     except Exception as e:
@@ -63,7 +63,7 @@ def register_user():
         username=data['username'],
         email=data['email'],
         password=hashed_pw,
-        role='Korisnik'
+        role='User'
     )
     db.session.add(new_user)
     db.session.commit()

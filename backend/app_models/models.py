@@ -15,7 +15,7 @@ class User(db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(20), default='Korisnik')
+    role = db.Column(db.String(20), default='User')
 
     # Veze
     follows = db.relationship('UserRepoFollow', backref='user', lazy=True)
