@@ -1,50 +1,53 @@
 from flask import Blueprint, jsonify, request
-from services.github_service import GitHubService
-from services.search_service import SearchService
-from schemas.searchhistory_schema import SearchHistorySchema
+from app_models.models import db, User
+from schemas.user_schema import user_schema
+from flask_bcrypt import Bcrypt
 
-search_bp = Blueprint('search_bp', __name__)
-search_schema = SearchHistorySchema()
-search_history_list_schema = SearchHistorySchema(many=True)
+# Inicijalizujemo bcrypt lokalno za ovaj fajl
+bcrypt = Bcrypt()
+auth_bp = Blueprint('auth_bp', __name__)
 
 
-@search_bp.route('/api/search/repositories', methods=['POST'])
-def search_repositories():
-    """
-    Ruta za pretragu GitHub repozitorijuma.
-    Gost šalje samo 'query', dok Korisnik šalje i 'user_id'.
-    """
+@auth_bp.route('/api/auth/register', methods=['POST'])
+def register():
     data = request.json
-    query = data.get('query')
-    user_id = data.get('user_id')  # None ako je Gost
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
 
-    if not query:
-        return jsonify({"error": "Search query is required"}), 400
+    if User.query.filter_by(username=username).first():
+        return jsonify({"error": "Username already exists"}), 400
 
-    # 1. Pozivamo eksterni GitHub API preko servisa
-    # (Pretpostavljamo da GitHubService vraća listu repozitorijuma)
-    github_results = GitHubService.get_repo_details(query)
+    # Hešovanje lozinke
+    hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
 
-    if github_results is None:
-        return jsonify({"error": "Failed to fetch data from GitHub"}), 503
+    new_user = User(
+        username=username,
+        email=email,
+        password=hashed_pw,
+        role='User'
+    )
 
-    # 2. Logujemo pretragu u bazu ako je user_id prosleđen (Korisnik)
-    if user_id:
-        SearchService.log_search(user_id, query, "repository_search")
+    db.session.add(new_user)
+    db.session.commit()
 
-    return jsonify({
-        "query": query,
-        "results": github_results
-    }), 200
+    return user_schema.jsonify(new_user), 201
 
 
-@search_bp.route('/api/search/history/<int:user_id>', methods=['GET'])
-def get_search_history(user_id):
-    """
-    Vraća istoriju pretraga za određenog korisnika.
-    Zahtev: Dozvoljeno samo autentifikovanim korisnicima.
-    """
-    # Kasnije ćemo ovde dodati @jwt_required ili sličnu zaštitu
-    history = SearchService.get_user_history(user_id)
+@auth_bp.route('/api/auth/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
 
-    return jsonify(search_history_list_schema.dump(history)), 200
+    user = User.query.filter_by(username=username).first()
+
+    if user and bcrypt.check_password_hash(user.password, password):
+        return jsonify({
+            "message": "Login successful",
+            "user_id": user.user_id,
+            "username": user.username,
+            "role": user.role
+        }), 200
+
+    return jsonify({"error": "Invalid username or password"}), 401

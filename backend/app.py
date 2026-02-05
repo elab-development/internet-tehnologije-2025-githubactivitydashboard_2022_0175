@@ -1,5 +1,11 @@
 import sys
 import os
+# Importuj tvoje nove rute
+from routes.auth_routes import auth_bp
+from routes.search_routes import search_bp
+from routes.repository_routes import repo_bp
+from routes.watchlist_routes import watchlist_bp
+
 
 # Dodajemo putanju do backend foldera u Python sistem
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
@@ -16,6 +22,11 @@ from schemas.user_schema import user_schema, users_schema
 app = Flask(__name__)
 CORS(app)
 bcrypt = Bcrypt(app)
+# Registracija Blueprint-ova
+app.register_blueprint(auth_bp)
+app.register_blueprint(search_bp)
+app.register_blueprint(repo_bp)
+app.register_blueprint(watchlist_bp)
 
 # 1. KONFIGURACIJA (Sada je ispravna za Docker)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://elab_user:elab_password@localhost:5432/github_stats'
