@@ -1,0 +1,27 @@
+[33mfe78234[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32muna[m[33m, [m[1;31morigin/una[m[33m)[m HEAD@{0}: reset: moving to HEAD~3
+[33m1962f24[m HEAD@{1}: commit: Fix critical rendering issue by correcting React Router context and index.js configuration
+[33mb9cf45c[m HEAD@{2}: commit: Implement React Router for declarative routing and URL navigation
+[33mcb610d7[m HEAD@{3}: commit: Implement React Router for declarative routing and URL navigation
+[33mfe78234[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32muna[m[33m, [m[1;31morigin/una[m[33m)[m HEAD@{4}: commit: Update User model role default and generate migration script
+[33m0cb156a[m HEAD@{5}: commit: Finalize backend setup, database integration, and password security verification
+[33mde7fda8[m HEAD@{6}: commit (merge): Sacuvane izmene pre merga sa Anjom
+[33m9ae6167[m HEAD@{7}: commit: Completed models and schema, corrected imports
+[33m07cec49[m HEAD@{8}: commit: Fix: Backend Dockerization, Postgres setup, and initial migration with role column
+[33m48e204b[m[33m ([m[1;32manja[m[33m)[m HEAD@{9}: checkout: moving from anja to una
+[33m48e204b[m[33m ([m[1;32manja[m[33m)[m HEAD@{10}: commit: cleanup: remove local sqlite database and instance folder
+[33m837fbee[m HEAD@{11}: commit: feat: setup flask-migrate and initialize database migrations
+[33mab26b78[m HEAD@{12}: commit: build: establish backend directory structure
+[33mc2079bc[m HEAD@{13}: pull origin anja: Fast-forward
+[33m07e177b[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{14}: checkout: moving from main to anja
+[33m07e177b[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{15}: reset: moving to anja
+[33m07e177b[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{16}: checkout: moving from main to main
+[33m07e177b[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{17}: merge anja: Fast-forward
+[33m0b91114[m HEAD@{18}: checkout: moving from anja to main
+[33m07e177b[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{19}: reset: moving to HEAD
+[33m07e177b[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{20}: checkout: moving from main to anja
+[33m0b91114[m HEAD@{21}: pull origin main: Merge made by the 'ort' strategy.
+[33mc30b805[m HEAD@{22}: reset: moving to HEAD
+[33mc30b805[m HEAD@{23}: commit: feat: dodata docker konfiguracija za bazu
+[33mddee0ff[m HEAD@{24}: commit: Fix: removed duplicate code in models.py
+[33m5c19b74[m HEAD@{25}: commit: Add database models - Contributed by Una
+[33m1727dac[m HEAD@{26}: clone: from https://github.com/elab-development/internet-tehnologije-2025-githubactivitydashboard_2022_0175.git
