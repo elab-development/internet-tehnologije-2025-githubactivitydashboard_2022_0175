@@ -4,10 +4,14 @@ const UserTable = () => {
     const [users, setUsers] = useState([]);
 
     const fetchUsers = () => {
+        // Dodajemo '/api/users' - proveri da li je to ruta u tvom Flask app.py
         fetch('http://127.0.0.1:5000/api/users')
             .then(res => res.json())
-            .then(data => setUsers(data))
-            .catch(err => console.error("Error:", err));
+            .then(data => {
+                // Provera da li je data niz (array) da ne pukne .map()
+                if(Array.isArray(data)) setUsers(data);
+            })
+            .catch(err => console.error("Error fetching users:", err));
     };
 
     useEffect(() => {
@@ -15,26 +19,25 @@ const UserTable = () => {
     }, []);
 
     const handleDelete = async (userId, username) => {
-        if (window.confirm(`Are you sure you want to remove user? ${username}?`)) {
+        if (window.confirm(`Are you sure you want to remove user: ${username}?`)) {
             try {
                 const response = await fetch(`http://127.0.0.1:5000/api/users/${userId}`, {
                     method: 'DELETE',
                 });
                 if (response.ok) {
-                    // Ako je brisanje uspelo, ponovo povuci listu da se skloni sa ekrana
                     fetchUsers();
                 } else {
                     const data = await response.json();
-                    alert(data.message);
+                    alert(data.message || "Delete failed");
                 }
             } catch (error) {
-                alert("Error, not able to delete!");
+                alert("Error connecting to server!");
             }
         }
     };
 
     return (
-        <div style={{ marginTop: '20px', width: '100%' }}>
+        <div style={{ marginTop: '20px', width: '100%', overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f5e6d3', fontSize: '13px' }}>
                 <thead>
                     <tr style={{ borderBottom: '2px solid #89cff0' }}>
@@ -46,13 +49,14 @@ const UserTable = () => {
                 </thead>
                 <tbody>
                     {users.map(user => (
-                        <tr key={user.id} style={{ borderBottom: '1px solid rgba(137, 207, 240, 0.2)' }}>
-                            <td style={{ padding: '10px' }}>{user.id}</td>
+                        // Koristimo user_id jer je tako u tvom modelu u bazi
+                        <tr key={user.user_id} style={{ borderBottom: '1px solid rgba(137, 207, 240, 0.2)' }}>
+                            <td style={{ padding: '10px' }}>{user.user_id}</td>
                             <td style={{ padding: '10px' }}>{user.username}</td>
                             <td style={{ padding: '10px' }}>{user.role}</td>
                             <td style={{ padding: '10px', textAlign: 'center' }}>
                                 <button
-                                    onClick={() => handleDelete(user.id, user.username)}
+                                    onClick={() => handleDelete(user.user_id, user.username)}
                                     style={{
                                         backgroundColor: '#ff4d4d',
                                         color: 'white',

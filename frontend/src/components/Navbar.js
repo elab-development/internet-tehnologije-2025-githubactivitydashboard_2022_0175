@@ -1,6 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const Navbar = ({ isInApp, setIsInApp, userRole, setView }) => {
+const Navbar = ({ isInApp, setIsInApp, userRole }) => {
+  const navigate = useNavigate(); // Koristimo navigate hook direktno u Navbaru
+
   const navStyle = {
     display: 'flex',
     justifyContent: 'space-between',
@@ -26,14 +29,13 @@ const Navbar = ({ isInApp, setIsInApp, userRole, setView }) => {
     <nav style={navStyle}>
       <div
         style={{ fontSize: '20px', fontWeight: 'bold', letterSpacing: '2px', cursor: 'pointer' }}
-        onClick={() => setView("home")} // Klik na logo te takođe vraća na Home
+        onClick={() => navigate("/")} // Vodi na home rutu
       >
         <span style={{ color: '#89cff0' }}>ITEH</span>
       </div>
 
       <div>
-        {/* HOME sada samo menja prikaz na "home" bez osvežavanja stranice */}
-        <span style={linkStyle} onClick={() => setView("home")}>HOME</span>
+        <span style={linkStyle} onClick={() => navigate("/")}>HOME</span>
 
         <span style={linkStyle}>GITHUB TRENDS</span>
 
@@ -44,19 +46,17 @@ const Navbar = ({ isInApp, setIsInApp, userRole, setView }) => {
               style={{ ...linkStyle, color: '#ff4d4d' }}
               onClick={() => {
                 setIsInApp(false);
-                setView("home"); // Kad se izloguješ, baci te na Home pretragu
+                navigate("/"); // Vodi na home nakon logout-a
               }}
             >
               LOGOUT
             </span>
           </>
         ) : (
-          /* LOGIN / SIGNUP sada otvara formu preko setView */
-          <span style={linkStyle} onClick={() => setView("auth")}>LOGIN / SIGNUP</span>
+          <span style={linkStyle} onClick={() => navigate("/auth")}>LOGIN / SIGNUP</span>
         )}
       </div>
 
-      {/* Mali indikator ko je ulogovan */}
       {isInApp && (
         <div style={{ fontSize: '10px', opacity: 0.7 }}>
           LOGGED AS: <span style={{ color: '#89cff0' }}>{userRole}</span>
