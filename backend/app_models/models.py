@@ -1,7 +1,13 @@
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
 
+from flask_sqlalchemy import SQLAlchemy
+from flask_marshmallow import Marshmallow  # Dodaj ovo
+from datetime import datetime
+("Zato što mi omogućava automatsko mapiranje. Umesto da ručno kucam svaki tip podatka, "
+ "Marshmallow 'čita' moj model i zna da je"
+ " email string, a timestamp datum, što smanjuje mogućnost greške.")
 db = SQLAlchemy()
+ma = Marshmallow()  # Dodaj ovo ovde
+
 
 class User(db.Model):
     __tablename__ = 'users'
