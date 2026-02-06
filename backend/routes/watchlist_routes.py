@@ -1,13 +1,18 @@
 from flask import Blueprint, jsonify, request
 from services.repository_service import RepositoryService
-
+from services.watchlist_service import WatchlistService
 watchlist_bp = Blueprint('watchlist_bp', __name__)
 
-@watchlist_bp.route('/api/watchlist', methods=['GET'])
+
+@watchlist_bp.route('/api/watchlist', methods=['GET'])  # Proveri da li prefiks 'api' već postoji u blueprint-u
 def get_my_watchlist():
-    # Uzimamo user_id (kasnije iz sesije, sad za test iz args)
     user_id = request.args.get('user_id')
-    watchlist = RepositoryService.get_user_watchlist(user_id)
+
+    if not user_id:
+        return jsonify({"error": "user_id is required"}), 400
+
+    # Koristimo WatchlistService i metodu koju smo definisali
+    watchlist = WatchlistService.get_full_watchlist_details(user_id)
     return jsonify(watchlist), 200
 
 @watchlist_bp.route('/api/watchlist/follow', methods=['POST'])
