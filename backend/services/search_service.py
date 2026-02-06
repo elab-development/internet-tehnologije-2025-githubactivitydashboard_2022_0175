@@ -3,12 +3,16 @@ from app_models.models import db, SearchHistory
 class SearchService:
     @staticmethod
     def log_search(user_id, query, search_type):
-        # Samo ako je korisnik ulogovan (user_id nije None)
         if user_id:
-            new_search = SearchHistory(user_id=user_id, query=query, search_type=search_type)
-            db.session.add(new_search)
-            db.session.commit()
-            return True
+            try:
+                new_search = SearchHistory(user_id=user_id, query=query, search_type=search_type)
+                db.session.add(new_search)
+                db.session.commit()
+                return True
+            except Exception as e:
+                db.session.rollback()  # Obavezno uradi rollback ako pukne baza!
+                print(f"Greška pri logovanju pretrage: {e}")
+                return False
         return False
 
     @staticmethod
