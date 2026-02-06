@@ -1,10 +1,12 @@
 import sys
 import os
-# Importuj tvoje nove rute
+
 from routes.auth_routes import auth_bp
 from routes.search_routes import search_bp
 from routes.repository_routes import repo_bp
 from routes.watchlist_routes import watchlist_bp
+from routes.activity_routes import activity_bp
+
 
 
 # Dodajemo putanju do backend foldera u Python sistem
@@ -15,7 +17,7 @@ from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_bcrypt import Bcrypt
 
-# 1. UVOZ MODELA I ŠEMA (Pazi na putanje!)
+# 1. UVOZ MODELA I ŠEMA
 from app_models.models import db, ma, User  # Uvozimo i 'ma' koji smo dodali u app_models.py
 from schemas.user_schema import user_schema, users_schema
 
@@ -27,6 +29,7 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(search_bp)
 app.register_blueprint(repo_bp)
 app.register_blueprint(watchlist_bp)
+app.register_blueprint(activity_bp)
 
 # 1. KONFIGURACIJA (Sada je ispravna za Docker)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://elab_user:elab_password@localhost:5432/github_stats'
@@ -62,42 +65,6 @@ def dodaj_nas():
         return f"Greška: {e}"
 
 
-@app.route('/api/register', methods=['POST'])
-def register_user():
-    data = request.json
-    if User.query.filter_by(username=data['username']).first():
-        return jsonify({"message": "Korisnik već postoji!"}), 400
-
-    # Koristimo bcrypt za lozinku
-    hashed_pw = bcrypt.generate_password_hash(data['password']).decode('utf-8')
-    new_user = User(
-        username=data['username'],
-        email=data['email'],
-        password=hashed_pw,
-        role='User'
-    )
-    db.session.add(new_user)
-    db.session.commit()
-
-    # Koristimo DTO (user_schema) da vratimo podatke BEZ lozinke
-    return user_schema.jsonify(new_user), 201
-
-
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.json
-    user = User.query.filter_by(username=data['username']).first()
-
-    # Provera hešovane lozinke
-    if user and bcrypt.check_password_hash(user.password, data['password']):
-        # Ovde bi sutra mogli da vratimo user_schema.dump(user)
-        # da React dobije i email, id, itd.
-        return jsonify({"message": "Uspešan login!", "role": user.role, "user_id": user.user_id}), 200
-
-    return jsonify({"message": "Pogrešni podaci!"}), 401
-
-
-# Tvoja stara ruta za pregled usera ostaje ista
 @app.route('/api/users', methods=['GET'])
 def get_users():
     users = User.query.all()
