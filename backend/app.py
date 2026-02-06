@@ -12,7 +12,6 @@ from routes.activity_routes import activity_bp
 # Dodajemo putanju do backend foldera u Python sistem
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from flask import Flask, request, jsonify
-from app_models.models import db, User
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_bcrypt import Bcrypt
@@ -32,7 +31,7 @@ app.register_blueprint(watchlist_bp)
 app.register_blueprint(activity_bp)
 
 # 1. KONFIGURACIJA (Sada je ispravna za Docker)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://elab_user:elab_password@localhost:5432/github_stats'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://elab_user:elab_password@db:5432/github_stats'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # 2. INICIJALIZACIJA
@@ -83,7 +82,7 @@ def delete_user(user_id):
 
     db.session.delete(user)
     db.session.commit()
-    return jsonify({"message": f"Korisnik {user.username} je obrisan"})
+    return jsonify({"message": f"Korisnik {user.username} je obrisan"}), 200
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)
