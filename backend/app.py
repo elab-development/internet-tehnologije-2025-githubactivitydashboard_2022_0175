@@ -21,7 +21,11 @@ from app_models.models import db, ma, User  # Uvozimo i 'ma' koji smo dodali u a
 from schemas.user_schema import user_schema, users_schema
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {
+    "origins": "*",
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Origin"]
+}})
 bcrypt = Bcrypt(app)
 # Registracija Blueprint-ova
 app.register_blueprint(auth_bp)

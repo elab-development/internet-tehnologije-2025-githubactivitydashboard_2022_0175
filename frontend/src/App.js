@@ -13,6 +13,7 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // --- STATE ---
   const [hasSearched, setHasSearched] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState("");
@@ -20,6 +21,7 @@ function App() {
   const [isInApp, setIsInApp] = useState(false);
   const [userRole, setUserRole] = useState("guest");
   const [showTable, setShowTable] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   const [githubData, setGithubData] = useState({
     repos: "0",
@@ -33,53 +35,62 @@ function App() {
     issues: 0
   });
 
-  const handleLoginSuccess = (role, name) => {
+  // --- HANDLERS ---
+  const handleLoginSuccess = (role, name, id) => {
     const finalRole = role === 'Korisnik' ? 'user' : role;
     setUserRole(finalRole);
     setLoggedInName(name);
+    setCurrentUserId(id);
     setIsInApp(true);
-    navigate("/"); // Vrati se na home nakon logina
+    setHasSearched(false);
+    setUsername("");
+    navigate("/");
+  };
+
+  const handleLogout = () => {
+    setIsInApp(false);
+    setUserRole("guest");
+    setLoggedInName("");
+    setShowTable(false);
+    setCurrentUserId(null);
+
+    // Potpuni refresh za čišćenje svega
+    window.location.reload();
   };
 
   const handleSearch = async (type = 'user') => {
     if (!username) return;
-    let url = `https://api.github.com/users/${username}`;
-
-    if (type === 'repo') {
-      let repoPath = username.replace("https://github.com/", "");
-      if (repoPath.endsWith("/")) repoPath = repoPath.slice(0, -1);
-      url = `https://api.github.com/repos/${repoPath}`;
-    }
 
     try {
-      const response = await fetch(url);
+      const response = await fetch('http://localhost:5000/api/repository/details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: username.trim(),
+          user_id: isInApp ? currentUserId : null
+        }),
+      });
+
       const data = await response.json();
+
       if (response.ok) {
-        if (type === 'repo') {
-          setGithubData({
-            isRepo: true,
-            repoName: data.name,
-            avatar: data.owner.avatar_url,
-            language: data.language || "N/A",
-            stars: data.stargazers_count,
-            issues: data.open_issues_count,
-            repos: data.forks_count
-          });
-        } else {
-          setGithubData({
-            isRepo: false,
-            repos: data.public_repos,
-            followers: data.followers > 999 ? (data.followers / 1000).toFixed(1) + 'k' : data.followers,
-            gists: data.public_gists,
-            avatar: data.avatar_url
-          });
-        }
+        const details = data.repo_data || data;
+        setGithubData({
+          isRepo: true,
+          repoName: details.name || details.full_name,
+          avatar: details.owner?.avatar_url || details.avatar_url,
+          language: details.language || "N/A",
+          stars: details.stargazers_count || 0,
+          issues: details.open_issues_count || 0,
+          repos: details.forks_count || 0
+        });
         setHasSearched(true);
       } else {
-        alert("Not found!");
+        alert("Greška na tvom backendu: " + (data.error || "Nije pronađeno"));
       }
     } catch (error) {
-      console.error("Greška:", error);
+      console.error("Greška pri povezivanju sa Flaskom:", error);
+      alert("Proveri da li je Flask server pokrenut!");
     }
   };
 
@@ -90,18 +101,16 @@ function App() {
   return (
     <div className="App" style={{ backgroundColor: '#1e2645', minHeight: '100vh', color: '#f5e6d3', fontFamily: '"Georgia", serif' }}>
 
-      {/* Navbar sada koristi navigate umesto setView */}
       <Navbar
         isInApp={isInApp}
         setIsInApp={setIsInApp}
         userRole={userRole}
+        handleLogout={handleLogout} // Dodajemo ovo ako ti Navbar ima Logout opciju
         setView={(target) => navigate(target === "auth" ? "/auth" : "/")}
       />
 
       <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '50px', marginTop: '40px' }}>
-
         <Routes>
-          {/* RUTA ZA LOGIN/REGISTRACIJU */}
           <Route path="/auth" element={
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div style={{ backgroundColor: '#f5e6d3', padding: '30px', borderRadius: '5px', color: '#301142', width: '100%', maxWidth: '350px', boxShadow: '10px 10px 0px #89cff0' }}>
@@ -120,13 +129,11 @@ function App() {
             </div>
           } />
 
-          {/* RUTA ZA POCETNU STRANU I PRETRAGU */}
           <Route path="/" element={
             <div style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
               {!isInApp && !hasSearched && <Header />}
 
-              {/* Admin Panel */}
               {isInApp && userRole === 'Admin' && (
                 <div style={{ marginBottom: '20px', padding: '15px', border: '1px dashed #89cff0', borderRadius: '10px', textAlign: 'center', width: '100%', maxWidth: '600px' }}>
                   <p style={{ fontSize: '12px', color: '#89cff0', marginBottom: '10px', fontWeight: 'bold' }}>ADMIN PRIVILEGES ACTIVE</p>
@@ -140,12 +147,6 @@ function App() {
                 </div>
               )}
 
-              {!isInApp && (
-                <p style={{ color: '#f5e6d3', fontSize: '12px', marginBottom: '20px', opacity: 0.6 }}>
-                   ✨ Guest Mode! Login to save history.
-                </p>
-              )}
-
               <SearchBox username={username} setUsername={setUsername} handleSearch={handleSearch} />
 
               {hasSearched ? (
@@ -156,19 +157,7 @@ function App() {
                 </p>
               )}
 
-              {isInApp && (
-                <button
-                  onClick={() => {
-                    setIsInApp(false);
-                    setUserRole("guest");
-                    setLoggedInName("");
-                    setShowTable(false);
-                    navigate("/");
-                  }}
-                  style={{ marginTop: '40px', background: 'none', border: '1px solid rgba(137, 207, 240, 0.3)', color: '#89cff0', padding: '10px 25px', borderRadius: '20px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase' }}>
-                  Logout
-                </button>
-              )}
+              {/* Obrisao sam višak Logout dugmeta ovde - Navbar je obično dovoljno mesto za to */}
             </div>
           } />
         </Routes>

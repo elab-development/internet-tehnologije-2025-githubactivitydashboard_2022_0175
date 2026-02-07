@@ -5,32 +5,32 @@ function Login({ onLoginSuccess }) {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [status, setStatus] = useState('');
 
-  const handleLogin = async (e) => {
-      e.preventDefault();
-      try {
-        const response = await fetch('http://127.0.0.1:5000/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-        const data = await response.json();
+ const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      // 1. Koristi localhost:5000
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      const data = await response.json();
 
-        if (response.ok) {
-          setStatus(`Welcome back!`);
+      if (response.ok) {
+        setStatus(`Welcome back!`);
 
-          // IZMENA: Prosleđujemo i ulogu (role) i korisničko ime (username)
-          if (onLoginSuccess) {
-            onLoginSuccess(data.role, data.username);
-          }
-
-        } else {
-          // data.message je ono što šalješ iz Flask-a (npr. "Pogrešni podaci!")
-          setStatus(`Error: ${data.message || 'Invalid credentials'}`);
+        if (onLoginSuccess) {
+          // 2. OVO JE KLJUČ: Dodajemo i treći parametar - data.user_id
+          onLoginSuccess(data.role, data.username, data.user_id);
         }
-      } catch (error) {
-        setStatus('Error: Server is not available.');
+
+      } else {
+        setStatus(`Error: ${data.error || 'Invalid credentials'}`);
       }
-    };
+    } catch (error) {
+      setStatus('Error: Server is not available.');
+    }
+};
 
   return (
     <div style={{ padding: '10px', maxWidth: '300px', margin: '0 auto' }}>
