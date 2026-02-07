@@ -22,6 +22,7 @@ function App() {
   const [userRole, setUserRole] = useState("guest");
   const [showTable, setShowTable] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [contributors, setContributors] = useState([]);
 
   const [githubData, setGithubData] = useState({
     repos: "0",
@@ -107,17 +108,26 @@ function App() {
             issues: details.open_issues_count || 0,
             repos: details.forks_count || 0
           });
+          const [owner, rName] = (details.full_name || username).split('/');
+        try {
+          const cRes = await fetch(`http://localhost:5000/api/contributors/${owner}/${rName}`);
+          const cData = await cRes.json();
+          setContributors(Array.isArray(cData) ? cData : []);
+        } catch (err) {
+          console.error("Greška kod contributora:", err);
+          setContributors([]);
         }
-        setHasSearched(true);
-      } else {
-        // Alternativni scenario: "Korisnik ne postoji"
-        alert(data.error || "Nije pronađeno");
       }
-    } catch (error) {
-      console.error("Greška pri povezivanju:", error);
-      alert("Proveri Flask server!");
+      setHasSearched(true);
+    } else {
+     // Alternativni scenario: "Korisnik ne postoji"
+      alert(data.error || "Nije pronađeno");
     }
-  };
+  } catch (error) {
+    console.error("Greška pri povezivanju:", error);
+  }
+};
+
 
   const smallLinkStyle = {
     marginTop: '20px', background: 'none', border: 'none', color: '#89cff0', cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold'
@@ -175,7 +185,7 @@ function App() {
               <SearchBox username={username} setUsername={setUsername} handleSearch={handleSearch} />
 
               {hasSearched ? (
-                <UserResults githubData={githubData} />
+                <UserResults githubData={githubData} contributors={contributors} />
               ) : (
                 <p style={{ opacity: 0.5, fontStyle: 'italic', marginTop: '20px' }}>
                   {isInApp ? `Welcome, ${loggedInName}!` : "Enter a GitHub username or repo."}

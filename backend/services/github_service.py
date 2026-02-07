@@ -72,3 +72,32 @@ class GitHubService:
         if response.status_code == 200:
             return response.json()
         return None
+
+    @staticmethod
+    def get_repo_stats(owner, repo):
+        """Pomocna funkcija za brojanje PR-ova i Issue-a po korisniku"""
+        stats = {}
+
+        # 1. Dohvatanje Pull Request-ova (uzimamo poslednjih 100 radi brzine)
+        pr_url = f"https://api.github.com/repos/{owner}/{repo}/pulls?state=all&per_page=100"
+        pr_res = requests.get(pr_url, headers=GitHubService.get_headers())
+
+        if pr_res.status_code == 200:
+            for pr in pr_res.json():
+                user = pr['user']['login']
+                stats[user] = stats.get(user, {"prs": 0, "issues": 0})
+                stats[user]["prs"] += 1
+
+        # 2. Dohvatanje Issue-a
+        issue_url = f"https://api.github.com/repos/{owner}/{repo}/issues?state=all&per_page=100"
+        issue_res = requests.get(issue_url, headers=GitHubService.get_headers())
+
+        if issue_res.status_code == 200:
+            for issue in issue_res.json():
+                # GitHub API tretira PR-ove kao Issue-e, pa moramo da filtriramo
+                if 'pull_request' not in issue:
+                    user = issue['user']['login']
+                    stats[user] = stats.get(user, {"prs": 0, "issues": 0})
+                    stats[user]["issues"] += 1
+
+        return stats
