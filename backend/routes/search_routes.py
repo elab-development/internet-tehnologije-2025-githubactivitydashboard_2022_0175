@@ -11,19 +11,27 @@ search_schema = SearchHistorySchema(many=True)
 def search_repos():
     data = request.json
     query = data.get('query')
-    # Opciono: preuzimamo user_id iz sesije ili headera ako je korisnik ulogovan
     user_id = data.get('user_id')
 
-    if not query:
-        return jsonify({"error": "Query is required"}), 400
+    user_info = GitHubService.get_user_info(query)
+    if not user_info:
+        return jsonify({"error": "Korisnik ne postoji"}), 404
 
-    # 1. Pozivamo GitHub API preko servisa
-    github_results = GitHubService.get_repo_details(query)  # Ili funkciju za search
+    # --- OVO SI MOŽDA ZABORAVILA ---
+    # Moramo stvarno pozvati GitHub da nam da listu repo-a
+    repos_list = GitHubService.get_user_repos(query)
 
-    # 2. Logujemo pretragu u bazu (Service će sam proveriti da li je user_id None)
-    SearchService.log_search(user_id, query, "repository")
+    SearchService.log_search(user_id, query, "user_search")
 
-    return jsonify(github_results), 200
+    return jsonify({
+        "avatar_url": user_info.get("avatar_url"),
+        "login": user_info.get("login"),
+        "public_repos": user_info.get("public_repos"),
+        "followers": user_info.get("followers"),
+        "following": user_info.get("following"),
+        "repos_list": repos_list, # OVO MORA BITI OVDE
+        "type": "user"
+    }), 200
 
 
 @search_bp.route('/api/search/history/<int:user_id>', methods=['GET'])

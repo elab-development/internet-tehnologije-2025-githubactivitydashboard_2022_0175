@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
-import Login from './Login';
-import Registration from './Registration';
+import Login from './components/Login';
+import Registration from './components/Registration';
 import Navbar from './components/Navbar';
 import Header from './components/Header';
 import SearchBox from './components/SearchBox';
@@ -58,39 +58,64 @@ function App() {
     window.location.reload();
   };
 
-  const handleSearch = async (type = 'user') => {
+  const handleSearch = async (typeFromBox) => {
     if (!username) return;
 
+    // INTELIGENTNA PROVERA:
+    // Ako u polju nema "/", to je uvek USER pretraga, čak i ako je prekidač na 'repo'.
+    // Ovo rešava tvoj 404 problem u konzoli.
+    const actualType = username.includes('/') ? 'repo' : 'user';
+
+    const endpoint = actualType === 'user'
+      ? 'http://localhost:5000/api/search/repositories'
+      : 'http://localhost:5000/api/repository/details';
+
+    const bodyData = actualType === 'user'
+      ? { query: username.trim(), user_id: isInApp ? currentUserId : null }
+      : { url: username.trim(), user_id: isInApp ? currentUserId : null };
+
     try {
-      const response = await fetch('http://localhost:5000/api/repository/details', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: username.trim(),
-          user_id: isInApp ? currentUserId : null
-        }),
+        body: JSON.stringify(bodyData),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        const details = data.repo_data || data;
-        setGithubData({
-          isRepo: true,
-          repoName: details.name || details.full_name,
-          avatar: details.owner?.avatar_url || details.avatar_url,
-          language: details.language || "N/A",
-          stars: details.stargazers_count || 0,
-          issues: details.open_issues_count || 0,
-          repos: details.forks_count || 0
-        });
+        if (actualType === 'user') {
+          // --- USE CASE 2.1.2: KORISNIK PRONAĐEN ---
+          setGithubData({
+            isRepo: false,
+            repoName: data.login,
+            avatar: data.avatar_url,
+            repos: data.public_repos || 0,
+            followers: data.followers || 0,
+            gists: data.following || 0,
+            reposList: data.repos_list || [] // Lista repozitorijuma za output
+          });
+        } else {
+          // --- ANALIZA REPOZITORIJUMA ---
+          const details = data.repo_data || data;
+          setGithubData({
+            isRepo: true,
+            repoName: details.name || details.full_name,
+            avatar: details.owner?.avatar_url || details.avatar_url,
+            language: details.language || "N/A",
+            stars: details.stargazers_count || 0,
+            issues: details.open_issues_count || 0,
+            repos: details.forks_count || 0
+          });
+        }
         setHasSearched(true);
       } else {
-        alert("Greška na tvom backendu: " + (data.error || "Nije pronađeno"));
+        // Alternativni scenario: "Korisnik ne postoji"
+        alert(data.error || "Nije pronađeno");
       }
     } catch (error) {
-      console.error("Greška pri povezivanju sa Flaskom:", error);
-      alert("Proveri da li je Flask server pokrenut!");
+      console.error("Greška pri povezivanju:", error);
+      alert("Proveri Flask server!");
     }
   };
 
@@ -157,7 +182,6 @@ function App() {
                 </p>
               )}
 
-              {/* Obrisao sam višak Logout dugmeta ovde - Navbar je obično dovoljno mesto za to */}
             </div>
           } />
         </Routes>

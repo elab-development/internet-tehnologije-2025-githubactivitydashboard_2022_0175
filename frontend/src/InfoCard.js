@@ -41,7 +41,7 @@ function InfoCard({ title, value, subValue, icon }) {
           fontSize: '36px',
           fontWeight: 'bold',
           color: '#1e2645',
-          fontFamily: '"Jaoren", sans-serif'
+          fontFamily: '"Georgia", sans-serif'
         }}>
           {value}
         </div>
