@@ -5,7 +5,6 @@ import requests
 
 activity_bp = Blueprint('activity', __name__)
 
-
 @activity_bp.route('/api/repository/details', methods=['POST'])
 def get_repo_details_route():
     try:
@@ -21,39 +20,49 @@ def get_repo_details_route():
         if not details:
             return jsonify({"error": "Repository not found on GitHub"}), 404
 
-        # --- OVDE JE BILA GREŠKA, EVO POPRAVKE ---
         if user_id:
-            from services.search_service import SearchService  # Importuj ovde ako nije na vrhu
-            # Umesto follow_repository, zovemo log_search za istoriju!
+            from services.search_service import SearchService
             SearchService.log_search(user_id, repo_url, "repo_search")
             db_message = "Search logged in history"
         else:
             db_message = "Guest mode: Data not saved"
 
-        # Vraćamo status 200 (OK), a ne status od follow servisa
         return jsonify({"db_status": db_message, "repo_data": details}), 200
-
     except Exception as e:
         print(f"Greška u repository/details: {e}")
         return jsonify({"error": str(e)}), 500
 
-# --- RUTA ZA TABELU (AKTIVNOSTI) ---
+# --- IZMENJENA RUTA ZA TABELU (AKTIVNOSTI SA FILTEROM KORISNIKA) ---
 @activity_bp.route('/api/activity/list', methods=['POST'])
 def get_activity_list():
     try:
         data = request.json
-        owner, repo, filter_type = data.get('owner'), data.get('repo'), data.get('filter', 'All')
+        owner = data.get('owner')
+        repo = data.get('repo')
+        filter_type = data.get('filter', 'All')
+        author_filter = data.get('author_filter', '')  # DODATO: Preuzimamo filter autora
+
         url = f"https://api.github.com/repos/{owner}/{repo}/events?per_page=100"
         headers = GitHubService.get_headers()
         response = requests.get(url, headers=headers)
 
+        if response.status_code != 200:
+            return jsonify({"error": "GitHub API error"}), response.status_code
+
         events = response.json()
         activity_feed = []
-        for event in events:
-            raw_type = event.get("type", "").replace("Event", "")
-            if filter_type != "All" and raw_type != filter_type: continue
 
-            pusher_login = event.get("actor", {}).get("login")
+        for event in events:
+            # 1. Filter po tipu aktivnosti (Push, Watch, itd.)
+            raw_type = event.get("type", "").replace("Event", "")
+            if filter_type != "All" and raw_type != filter_type:
+                continue
+
+            # 2. DODATO: Filter po autoru (Scenario 2.1.8)
+            pusher_login = event.get("actor", {}).get("login", "")
+            if author_filter and author_filter.lower() != pusher_login.lower():
+                continue
+
             payload = event.get("payload", {})
             commits = payload.get("commits", [])
 
@@ -69,7 +78,11 @@ def get_activity_list():
                 "sha": sha,
                 "repo_full": f"{owner}/{repo}"
             })
-            if len(activity_feed) >= 20: break
+
+            # Limitiramo na 20 rezultata nakon filtriranja
+            if len(activity_feed) >= 20:
+                break
+
         return jsonify(activity_feed), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

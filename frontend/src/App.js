@@ -11,7 +11,7 @@ import UserTable from './components/UserTable';
 import ActivityDetails from './components/ActivityDetails';
 import ActivityFeed from './components/ActivityFeed';
 import FollowingList from './components/FollowingList';
-import SearchHistory from './components/SearchHistory'; // DODAJ OVO
+import SearchHistory from './components/SearchHistory';
 
 function App() {
   const navigate = useNavigate();
@@ -31,8 +31,8 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [activities, setActivities] = useState([]);
   const [filterType, setFilterType] = useState("All");
+  const [authorFilter, setAuthorFilter] = useState(""); // OVO JE NOVO
 
-  // NOVO ZA WATCHLIST
   const [isFollowing, setIsFollowing] = useState(false);
   const [currentDbRepoId, setCurrentDbRepoId] = useState(null);
 
@@ -48,8 +48,8 @@ function App() {
     issues: 0,
     reposList: [],
     owner: "",
-    full_name: "", // Dodato za watchlist
-    html_url: ""   // Dodato za watchlist
+    full_name: "",
+    html_url: ""
   });
 
   // --- HANDLERS ---
@@ -71,10 +71,10 @@ function App() {
     setLoggedInName("");
     setShowTable(false);
     setCurrentUserId(null);
-    window.location.reload();
+    window.location.href = "/";
   };
 
-  const loadActivityFeed = async (owner, repo, type = "All") => {
+  const loadActivityFeed = async (owner, repo, type = "All", author = "") => {
     try {
       const activityResponse = await fetch('http://localhost:5000/api/activity/list', {
         method: 'POST',
@@ -82,18 +82,22 @@ function App() {
         body: JSON.stringify({
           owner: owner,
           repo: repo,
-          filter: type
+          filter: type,
+          author_filter: author // Šaljemo i korisnika koga tražimo
         })
       });
 
       const activityData = await activityResponse.json();
+
       if (activityResponse.ok) {
         setActivities(activityData);
       } else {
         console.error("Backend error:", activityData.error);
+        alert("Greška pri učitavanju aktivnosti.");
       }
     } catch (error) {
       console.error("Greška pri učitavanju feed-a:", error);
+      alert("Greška pri povezivanju sa serverom.");
     }
   };
 
@@ -101,10 +105,10 @@ function App() {
   const handleSearch = async () => {
       if (!username) return;
 
-      // Početni reset stanja
       setHasSearched(false);
       setActivities([]);
       setFilterType("All");
+      setAuthorFilter(""); // Resetujemo filter autora pri novoj pretrazi
       setIsFollowing(false);
       setCurrentDbRepoId(null);
 
@@ -130,7 +134,6 @@ function App() {
 
         if (response.ok) {
           if (!isRepoSearch) {
-            // --- USER MODE ---
             setGithubData({
               isRepo: false,
               repoName: "",
@@ -144,7 +147,6 @@ function App() {
               html_url: ""
             });
           } else {
-            // --- REPO MODE ---
             const details = data.repo_data || data;
             const [urlOwner, urlRepo] = cleanInput.split('/');
             const ownerName = details.owner?.login || urlOwner;
@@ -164,21 +166,18 @@ function App() {
               html_url: details.html_url
             });
 
-            // --- KLJUČNI DEO: PROVERA DA LI JE REPO VEĆ ZAPRAĆEN ---
             if (isInApp && currentUserId) {
               try {
                 const checkRes = await fetch(`http://localhost:5000/api/following?user_id=${currentUserId}`);
                 if (checkRes.ok) {
                   const followingList = await checkRes.json();
-
-                  // Tražimo podudaranje u bazi (ignorišemo velika/mala slova)
                   const foundRepo = followingList.find(
                     r => r.full_name.toLowerCase() === repoFullName.toLowerCase()
                   );
 
                   if (foundRepo) {
                     setIsFollowing(true);
-                    setCurrentDbRepoId(foundRepo.repo_id); // Čuvamo ID iz baze za Unfollow
+                    setCurrentDbRepoId(foundRepo.repo_id);
                   }
                 }
               } catch (err) {
@@ -186,7 +185,7 @@ function App() {
               }
             }
 
-            loadActivityFeed(ownerName, repoSimpleName, "All");
+            loadActivityFeed(ownerName, repoSimpleName, "All", ""); // Prazan autor na početku
           }
           setHasSearched(true);
         } else {
@@ -204,7 +203,18 @@ function App() {
     const owner = githubData.owner;
     const repo = githubData.repoName;
     if (owner && repo) {
-      loadActivityFeed(owner, repo, selected);
+      loadActivityFeed(owner, repo, selected, authorFilter); // Šaljemo i trenutnog autora
+    }
+  };
+
+  // NOVO: Hendler za promenu autora
+  const handleAuthorChange = (e) => {
+    const authorValue = e.target.value;
+    setAuthorFilter(authorValue);
+    const owner = githubData.owner;
+    const repo = githubData.repoName;
+    if (owner && repo) {
+      loadActivityFeed(owner, repo, filterType, authorValue); // Šaljemo novi autor filter
     }
   };
 
@@ -236,42 +246,30 @@ function App() {
     }
   };
 
-  // --- NOVO: HANDLE FOLLOW TOGGLE ---
-  // --- IZMENJENI HANDLE FOLLOW TOGGLE ---
     const handleToggleFollow = async () => {
-      // 1. Provera logina
       if (!currentUserId) {
           alert("You must be logged in to follow repositories!");
           return;
       }
-
-      // Provera da li imamo podatke o repozitorijumu
       if (!githubData.full_name) {
-          alert("Repository data is missing. Please try searching again.");
+          alert("Repository data is missing.");
           return;
       }
 
       if (isFollowing) {
-        // --- UNFOLLOW (DELETE) ---
         try {
-          // Koristimo endpoint koji smo definisali u watchlist_routes.py
           const response = await fetch(`http://localhost:5000/api/watchlist/unfollow?user_id=${currentUserId}&repo_id=${currentDbRepoId}`, {
             method: 'DELETE',
           });
-
           if (response.ok) {
             setIsFollowing(false);
-            setCurrentDbRepoId(null); // Brišemo ID jer više ne pratimo
+            setCurrentDbRepoId(null);
             alert("Removed from following list!");
-          } else {
-            const errorData = await response.json();
-            alert("Error: " + (errorData.error || "Could not unfollow"));
           }
         } catch (error) {
           console.error("Unfollow error:", error);
         }
       } else {
-        // --- FOLLOW (POST) ---
         try {
           const response = await fetch('http://localhost:5000/api/watchlist/follow', {
             method: 'POST',
@@ -280,24 +278,18 @@ function App() {
               user_id: currentUserId,
               repo_data: {
                 full_name: githubData.full_name,
-                html_url: githubData.html_url // Ovo je url koji se čuva u bazi
+                html_url: githubData.html_url
               }
             })
           });
-
           const data = await response.json();
-
           if (response.ok) {
             setIsFollowing(true);
-            // BACKEND VRAĆA repo_id NAKON ŠTO GA UPIŠE U UserRepoFollow TABELU
             setCurrentDbRepoId(data.repo_id);
             alert("Successfully following " + githubData.full_name);
-          } else {
-            alert("Error: " + (data.error || "Could not follow repository"));
           }
         } catch (error) {
           console.error("Follow error:", error);
-          alert("Server error while trying to follow.");
         }
       }
     };
@@ -313,8 +305,6 @@ function App() {
         userRole={userRole}
         handleLogout={handleLogout}
         goHome={goHome}
-        // setView nam tehnički više ne treba ako koristimo goHome i navigate unutar Navbara,
-        // ali ga možeš ostaviti ako ga koristiš negde drugde
       />
 
       <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '50px', marginTop: '40px' }}>
@@ -348,7 +338,6 @@ function App() {
 
               {hasSearched && (
                 <div style={{ width: '100%' }}>
-                  {/* DUGME ZA FOLLOW PRIKAZUJEMO SAMO AKO JE REPO MOD I KORISNIK JE LOGOVAN */}
                   {githubData.isRepo && isInApp && (
                     <div style={{ marginBottom: '20px', textAlign: 'center' }}>
                       <button
@@ -369,7 +358,7 @@ function App() {
                     </div>
                   )}
 
-                  {activities.length === 0 && filterType === "All" ? (
+                  {activities.length === 0 && filterType === "All" && authorFilter === "" ? (
                     <UserResults
                       githubData={githubData}
                       onActivityClick={(owner, repo) => {
@@ -379,33 +368,55 @@ function App() {
                           repoName: repo,
                           isRepo: true
                         }));
-                        loadActivityFeed(owner, repo, "All");
+                        loadActivityFeed(owner, repo, "All", "");
                       }}
                     />
                   ) : (
                     <div style={{ width: '100%', animation: 'fadeIn 0.5s' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <button onClick={() => { setActivities([]); setFilterType("All"); }} style={{ ...smallLinkStyle, marginTop: 0, textDecoration: 'none' }}>
+                        <button onClick={() => { setActivities([]); setFilterType("All"); setAuthorFilter(""); }} style={{ ...smallLinkStyle, marginTop: 0, textDecoration: 'none' }}>
                           ← Back to repo list
                         </button>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span style={{ fontSize: '14px', color: '#89cff0' }}>Filter by type:</span>
-                          <select
-                            value={filterType}
-                            onChange={handleFilterChange}
-                            style={{ backgroundColor: '#f5e6d3', color: '#1e2645', border: 'none', padding: '5px 10px', borderRadius: '5px', fontWeight: 'bold' }}
-                          >
-                            <option value="All">All Activities</option>
-                            <option value="Push">Commits (Rockets 🚀)</option>
-                            <option value="Watch">Stars ⭐</option>
-                            <option value="Create">New Branches 🆕</option>
-                          </select>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                          {/* DODATO: Input za pretragu po autoru */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '14px', color: '#89cff0' }}>User:</span>
+                            <input
+                              type="text"
+                              placeholder="Search username..."
+                              value={authorFilter}
+                              onChange={handleAuthorChange}
+                              style={{
+                                backgroundColor: '#f5e6d3',
+                                color: '#1e2645',
+                                border: 'none',
+                                padding: '5px 10px',
+                                borderRadius: '5px',
+                                fontWeight: 'bold',
+                                width: '140px'
+                              }}
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '14px', color: '#89cff0' }}>Type:</span>
+                            <select
+                              value={filterType}
+                              onChange={handleFilterChange}
+                              style={{ backgroundColor: '#f5e6d3', color: '#1e2645', border: 'none', padding: '5px 10px', borderRadius: '5px', fontWeight: 'bold' }}
+                            >
+                              <option value="All">All Activities</option>
+                              <option value="Push">Commits (Rockets 🚀)</option>
+                              <option value="Watch">Stars ⭐</option>
+                              <option value="Create">New Branches 🆕</option>
+                            </select>
+                          </div>
                         </div>
                       </div>
 
                       {activities.length === 0 ? (
-                        <p style={{ textAlign: 'center', marginTop: '50px', fontSize: '18px', color: '#89cff0' }}>Nema aktivnosti ovog tipa.</p>
+                        <p style={{ textAlign: 'center', marginTop: '50px', fontSize: '18px', color: '#89cff0' }}>Nema aktivnosti za ovaj filter.</p>
                       ) : (
                         <ActivityFeed activities={activities} onSelectDetail={handleActivityClick} />
                       )}
