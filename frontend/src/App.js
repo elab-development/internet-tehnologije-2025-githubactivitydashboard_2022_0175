@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useMemo } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 import Login from './components/Login';
@@ -31,10 +31,14 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [activities, setActivities] = useState([]);
   const [filterType, setFilterType] = useState("All");
-  const [authorFilter, setAuthorFilter] = useState(""); // OVO JE NOVO
+  const [authorFilter, setAuthorFilter] = useState("");
 
   const [isFollowing, setIsFollowing] = useState(false);
   const [currentDbRepoId, setCurrentDbRepoId] = useState(null);
+
+  // NOVO ZA SCENARIO 2.1.6 I LOAD MORE
+  const [sortOrder, setSortOrder] = useState('desc'); // 'desc' = najnovije, 'asc' = najstarije
+  const [visibleCount, setVisibleCount] = useState(10); // Broj vidljivih aktivnosti
 
   const [githubData, setGithubData] = useState({
     repos: "0",
@@ -51,6 +55,24 @@ function App() {
     full_name: "",
     html_url: ""
   });
+
+  // --- LOGIKA ZA SCENARIJE 2.1.6 i 2.1.8 (SORTIRANJE I FILTRIRANJE) ---
+
+  // 1. Sortiranje aktivnosti (Scenario 2.1.6)
+  // --- NOVA LOGIKA ZA SORTIRANJE (ZAMENA) ---
+    const activitiesToShow = useMemo(() => {
+      const result = [...activities].sort((a, b) => {
+        // Koristimo getTime() da budemo 100% sigurni u poređenje
+        const dateA = new Date(a.timestamp || a.date).getTime();
+        const dateB = new Date(b.timestamp || b.date).getTime();
+        return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+      });
+      return result.slice(0, visibleCount);
+    }, [activities, sortOrder, visibleCount]);
+
+    const isListEmpty = activities.length === 0;
+
+
 
   // --- HANDLERS ---
 
@@ -83,7 +105,7 @@ function App() {
           owner: owner,
           repo: repo,
           filter: type,
-          author_filter: author // Šaljemo i korisnika koga tražimo
+          author_filter: author
         })
       });
 
@@ -91,6 +113,7 @@ function App() {
 
       if (activityResponse.ok) {
         setActivities(activityData);
+        setVisibleCount(10); // Resetujemo load more pri svakom novom fetch-u
       } else {
         console.error("Backend error:", activityData.error);
         alert("Greška pri učitavanju aktivnosti.");
@@ -101,16 +124,16 @@ function App() {
     }
   };
 
-
   const handleSearch = async () => {
       if (!username) return;
 
       setHasSearched(false);
       setActivities([]);
       setFilterType("All");
-      setAuthorFilter(""); // Resetujemo filter autora pri novoj pretrazi
+      setAuthorFilter("");
       setIsFollowing(false);
       setCurrentDbRepoId(null);
+      setVisibleCount(10);
 
       const cleanInput = username.trim().replace('@', '');
       const isRepoSearch = cleanInput.includes('/');
@@ -185,7 +208,7 @@ function App() {
               }
             }
 
-            loadActivityFeed(ownerName, repoSimpleName, "All", ""); // Prazan autor na početku
+            loadActivityFeed(ownerName, repoSimpleName, "All", "");
           }
           setHasSearched(true);
         } else {
@@ -196,8 +219,8 @@ function App() {
         alert("Server nije dostupan.");
       }
     };
+
     const handleSelectRepo = async (owner, repo) => {
-      // 1. Postavi osnovne podatke da bi se UI osvežio
       setGithubData(prev => ({
         ...prev,
         owner: owner,
@@ -205,10 +228,8 @@ function App() {
         isRepo: true
       }));
 
-      // 2. Pozovi loadActivityFeed da dobiješ listu događaja
       loadActivityFeed(owner, repo, "All", "");
 
-      // 3. KLJUČNO: Ponovi fetch za detalje repoa da dobiješ stars, language i proveri following
       const repoFullName = `${owner}/${repo}`;
       try {
         const response = await fetch('http://localhost:5000/api/repository/details', {
@@ -233,7 +254,6 @@ function App() {
             html_url: details.html_url
           });
 
-          // Provera da li ga pratiš
           if (isInApp && currentUserId) {
             const checkRes = await fetch(`http://localhost:5000/api/following?user_id=${currentUserId}`);
             if (checkRes.ok) {
@@ -252,24 +272,24 @@ function App() {
         console.error("Greška pri učitavanju detalja repoa:", err);
       }
     };
+
   const handleFilterChange = (e) => {
     const selected = e.target.value;
     setFilterType(selected);
     const owner = githubData.owner;
     const repo = githubData.repoName;
     if (owner && repo) {
-      loadActivityFeed(owner, repo, selected, authorFilter); // Šaljemo i trenutnog autora
+      loadActivityFeed(owner, repo, selected, authorFilter);
     }
   };
 
-  // NOVO: Hendler za promenu autora
   const handleAuthorChange = (e) => {
     const authorValue = e.target.value;
     setAuthorFilter(authorValue);
     const owner = githubData.owner;
     const repo = githubData.repoName;
     if (owner && repo) {
-      loadActivityFeed(owner, repo, filterType, authorValue); // Šaljemo novi autor filter
+      loadActivityFeed(owner, repo, filterType, authorValue);
     }
   };
 
@@ -421,12 +441,26 @@ function App() {
                   ) : (
                     <div style={{ width: '100%', animation: 'fadeIn 0.5s' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <button onClick={() => { setActivities([]); setFilterType("All"); setAuthorFilter(""); }} style={{ ...smallLinkStyle, marginTop: 0, textDecoration: 'none' }}>
+                        <button onClick={() => { setActivities([]); setFilterType("All"); setAuthorFilter(""); setVisibleCount(10); }} style={{ ...smallLinkStyle, marginTop: 0, textDecoration: 'none' }}>
                           ← Back to repo list
                         </button>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                          {/* DODATO: Input za pretragu po autoru */}
+
+                          {/* SORTIRANJE - Scenario 2.1.6 */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '14px', color: '#89cff0' }}>Sort:</span>
+                            <select
+                              value={sortOrder}
+                              onChange={(e) => setSortOrder(e.target.value)}
+                              style={{ backgroundColor: '#f5e6d3', color: '#1e2645', border: 'none', padding: '5px 10px', borderRadius: '5px', fontWeight: 'bold' }}
+                            >
+                              <option value="desc">Newest</option>
+                              <option value="asc">Oldest</option>
+                            </select>
+                          </div>
+
+                          {/* PRETRAGA PO KORISNIKU - Scenario 2.1.8 */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ fontSize: '14px', color: '#89cff0' }}>User:</span>
                             <input
@@ -462,10 +496,38 @@ function App() {
                         </div>
                       </div>
 
-                      {activities.length === 0 ? (
-                        <p style={{ textAlign: 'center', marginTop: '50px', fontSize: '18px', color: '#89cff0' }}>Nema aktivnosti za ovaj filter.</p>
+                      {/* PRIKAZ AKTIVNOSTI ILI PORUKE O GREŠCI */}
+                      {isListEmpty ? (
+                        <p style={{ textAlign: 'center', marginTop: '50px', fontSize: '18px', color: '#89cff0' }}>
+                           Nema aktivnosti za prikaz.
+                        </p>
                       ) : (
-                        <ActivityFeed activities={activities} onSelectDetail={handleActivityClick} />
+                        <>
+                          <ActivityFeed activities={activitiesToShow} onSelectDetail={handleActivityClick} />
+
+                          {/* LOAD MORE DUGME */}
+                          {activities.length > visibleCount && (
+                            <div style={{ textAlign: 'center', marginTop: '30px' }}>
+                              <button
+                                onClick={() => setVisibleCount(prev => prev + 10)}
+                                style={{
+                                  backgroundColor: 'transparent',
+                                  color: '#89cff0',
+                                  border: '2px solid #89cff0',
+                                  padding: '10px 30px',
+                                  borderRadius: '5px',
+                                  fontWeight: 'bold',
+                                  cursor: 'pointer',
+                                  transition: '0.3s'
+                                }}
+                                onMouseOver={(e) => e.target.style.backgroundColor = 'rgba(137, 207, 240, 0.1)'}
+                                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                              >
+                                LOAD MORE ↓
+                              </button>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   )}

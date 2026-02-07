@@ -7,7 +7,6 @@ const ActivityFeed = ({ activities, onSelectDetail }) => {
 
   const getEventStyle = (type) => {
     const t = type ? type.toLowerCase().replace('event', '').trim() : '';
-
     switch (t) {
       case 'push': return { icon: '🚀', color: '#4caf50' };
       case 'watch': return { icon: '⭐', color: '#ffeb3b' };
@@ -46,7 +45,7 @@ const ActivityFeed = ({ activities, onSelectDetail }) => {
 
   return (
     <div style={styles.container}>
-      <h3 style={{ textAlign: 'center', color: '#89cff0', letterSpacing: '2px' }}>
+      <h3 style={{ textAlign: 'center', color: '#89cff0', letterSpacing: '2px', marginBottom: '20px' }}>
         ACTIVITY DASHBOARD
       </h3>
 
@@ -61,37 +60,37 @@ const ActivityFeed = ({ activities, onSelectDetail }) => {
             </tr>
           </thead>
           <tbody>
-            {activities.map((act) => {
+            {activities.map((act, index) => {
               const style = getEventStyle(act.type);
 
-              // POPRAVKA: Proveravamo tip aktivnosti direktno ako sha zakaže
-              const isPush = act.type.toLowerCase().includes('push');
+              // Provera za klik (Push + SHA)
+              const isPush = act.type && act.type.toLowerCase().includes('push');
               const hasSha = act.sha && act.sha.length > 0;
               const isClickable = isPush && hasSha;
 
+              // Koristimo timestamp iz tvog App.js logike
+              const dateToDisplay = act.timestamp || act.date;
+
               return (
                 <tr
-                  key={act.id}
-                  onMouseEnter={() => setHoveredId(act.id)}
+                  // KLJUČNO: index u key-u tera React da osveži redosled pri sortiranju
+                  key={`${act.id || index}-${index}`}
+                  onMouseEnter={() => setHoveredId(act.id || index)}
                   onMouseLeave={() => setHoveredId(null)}
                   onClick={() => {
-                    // DEBUG: Da vidimo šta tačno prosleđujemo
-                    console.log("Activity Type:", act.type);
-                    console.log("SHA value:", act.sha);
-
                     if (isClickable && act.repo_full) {
                       const [owner, repo] = act.repo_full.split('/');
                       onSelectDetail(owner, repo, act.sha);
                     } else if (isPush && !hasSha) {
-                      alert("Greška: Ovaj Push nema validan SHA kod. Osveži pretragu.");
+                      alert("No SHA found for this push.");
                     } else {
-                      alert("Details are available only on push activities (Commits).");
+                      alert("Details only for Commits (Push).");
                     }
                   }}
                   style={{
-                    cursor: isClickable ? 'pointer' : 'help',
-                    backgroundColor: hoveredId === act.id ? 'rgba(137, 207, 240, 0.1)' : 'transparent',
-                    transition: 'background-color 0.2s'
+                    cursor: isClickable ? 'pointer' : 'default',
+                    backgroundColor: hoveredId === (act.id || index) ? 'rgba(137, 207, 240, 0.1)' : 'transparent',
+                    transition: '0.3s'
                   }}
                 >
                   <td style={styles.td}>
@@ -109,12 +108,12 @@ const ActivityFeed = ({ activities, onSelectDetail }) => {
                   </td>
 
                   <td style={styles.td}>
-                    <span style={{ color: '#89cff0' }}>@{act.author}</span>
+                    <span style={{ color: '#89cff0' }}>@{act.actor_username || act.author}</span>
                   </td>
 
                   <td style={styles.td}>
                     <span style={{ fontSize: '11px', fontFamily: 'monospace' }}>
-                      {new Date(act.date).toLocaleString('sr-RS')}
+                      {dateToDisplay ? new Date(dateToDisplay).toLocaleString('sr-RS') : 'N/A'}
                     </span>
                   </td>
                 </tr>
