@@ -1,45 +1,23 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 const SearchBox = ({ username, setUsername, handleSearch }) => {
-  // Lokalni state da pratimo da li tražimo korisnika ili repo
-  const [searchType, setSearchType] = useState('user'); // 'user' ili 'repo'
-
-  const toggleStyle = (active) => ({
-    background: 'none',
-    border: 'none',
-    color: active ? '#89cff0' : '#f5e6d3',
-    cursor: 'pointer',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    letterSpacing: '2px',
-    textTransform: 'uppercase',
-    padding: '5px 15px',
-    opacity: active ? 1 : 0.5,
-    transition: 'all 0.3s ease'
-  });
-
   return (
     <div style={{ marginBottom: '50px', width: '100%', textAlign: 'center' }}>
-      <h2 style={{ fontFamily: '"Georgia", serif', fontSize: '32px', color: '#89cff0', marginBottom: '10px', textTransform: 'uppercase' }}>
-        {searchType === 'user' ? 'Explore Users' : 'Analyze Repository'}
+      {/* Jedan naslov koji obuhvata sve */}
+      <h2 style={{
+        fontFamily: '"Georgia", serif',
+        fontSize: '32px',
+        color: '#89cff0',
+        marginBottom: '5px',
+        textTransform: 'uppercase'
+      }}>
+        GitHub Explorer
       </h2>
 
-      {/* Prekidač između User i Repo pretrage */}
-      <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
-        <button
-          onClick={() => setSearchType('user')}
-          style={toggleStyle(searchType === 'user')}
-        >
-          User Search
-        </button>
-        <span style={{ color: '#f5e6d3', opacity: 0.3 }}>|</span>
-        <button
-          onClick={() => setSearchType('repo')}
-          style={toggleStyle(searchType === 'repo')}
-        >
-          Repo Analyzer
-        </button>
-      </div>
+      {/* Podnaslov koji objašnjava svestranost */}
+      <p style={{ color: '#f5e6d3', opacity: 0.7, marginBottom: '25px', fontSize: '14px' }}>
+        Search users or analyze specific repositories in one place
+      </p>
 
       <div style={{
         display: 'flex',
@@ -47,21 +25,20 @@ const SearchBox = ({ username, setUsername, handleSearch }) => {
         borderRadius: '50px',
         padding: '5px 5px 5px 25px',
         width: '100%',
-        maxWidth: '550px',
+        maxWidth: '600px',
         margin: '0 auto',
         alignItems: 'center',
         boxShadow: '0 15px 35px rgba(0,0,0,0.3)',
-        border: searchType === 'repo' ? '2px solid #89cff0' : '2px solid transparent',
-        transition: 'border 0.3s ease'
       }}>
         <input
           type="text"
-          placeholder={searchType === 'user' ? "Enter GitHub Username..." : "owner/repository (or paste URL)..."}
+          // Placeholder koji "edukuje" korisnika o obe opcije
+          placeholder="Enter @username or owner/repository..."
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
-              handleSearch(searchType); // Šaljemo tip pretrage u App.js
+              handleSearch(); // Samo poziva funkciju, bez slanja tipa
             }
           }}
           style={{
@@ -76,27 +53,28 @@ const SearchBox = ({ username, setUsername, handleSearch }) => {
           }}
         />
         <button
-          onClick={() => handleSearch(searchType)} // Šaljemo tip pretrage u App.js
+          onClick={() => handleSearch()}
           style={{
             backgroundColor: '#1e2645',
             color: '#f5e6d3',
             border: 'none',
-            padding: '12px 30px',
+            padding: '12px 35px',
             borderRadius: '50px',
             fontWeight: 'bold',
             cursor: 'pointer',
             textTransform: 'uppercase',
             letterSpacing: '1px'
           }}>
-          {searchType === 'user' ? 'Search' : 'Analyze'}
+          Go
         </button>
       </div>
 
-      {searchType === 'repo' && (
-        <p style={{ fontSize: '11px', color: '#89cff0', marginTop: '15px', opacity: 0.8 }}>
-          Tip: You can paste the full GitHub URL or just "user/repo"
-        </p>
-      )}
+      {/* Mali vizuelni hintovi ispod koji razbijaju iluziju */}
+      <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'center', gap: '20px', fontSize: '12px', color: '#89cff0', opacity: 0.6 }}>
+         <span>Example: <b>@django</b></span>
+         <span>|</span>
+         <span>Example: <b>django/django</b></span>
+      </div>
     </div>
   );
 };

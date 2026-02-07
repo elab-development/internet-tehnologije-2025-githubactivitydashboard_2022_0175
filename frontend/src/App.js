@@ -91,14 +91,22 @@ function App() {
 
   const handleSearch = async () => {
     if (!username) return;
-    const isRepoSearch = username.includes('/');
+
+    // --- NOVO: Resetujemo prethodne rezultate da se ne bi mešali ---
+    setHasSearched(false);
+    setActivities([]);
+    setFilterType("All");
+
+    const cleanInput = username.trim().replace('@', ''); // Brišemo @ ako korisnik ukuca @username
+    const isRepoSearch = cleanInput.includes('/');
+
     const endpoint = !isRepoSearch
       ? 'http://localhost:5000/api/search/repositories'
       : 'http://localhost:5000/api/repository/details';
 
     const bodyData = !isRepoSearch
-      ? { query: username.trim(), user_id: isInApp ? currentUserId : null }
-      : { url: username.trim(), user_id: isInApp ? currentUserId : null };
+      ? { query: cleanInput, user_id: isInApp ? currentUserId : null }
+      : { url: cleanInput, user_id: isInApp ? currentUserId : null };
 
     try {
       const response = await fetch(endpoint, {
@@ -110,14 +118,11 @@ function App() {
       const data = await response.json();
 
       if (response.ok) {
-        setActivities([]);
-        setFilterType("All");
-
         if (!isRepoSearch) {
-          // SLUČAJ 1: Pretraga korisnika (npr. torvalds)
+          // SLUČAJ 1: Pretraga korisnika
           setGithubData({
             isRepo: false,
-            repoName: "", // Bitno: nema repoa još uvek
+            repoName: "",
             avatar: data.avatar_url,
             repos: data.public_repos || 0,
             followers: data.followers || 0,
@@ -126,10 +131,12 @@ function App() {
             owner: data.login
           });
         } else {
-          // SLUČAJ 2: Direktna pretraga repoa (npr. facebook/react)
+          // SLUČAJ 2: Direktna pretraga repoa
           const details = data.repo_data || data;
-          const ownerName = details.owner?.login || username.split('/')[0];
-          const repoSimpleName = details.name || username.split('/')[1];
+          const [urlOwner, urlRepo] = cleanInput.split('/');
+
+          const ownerName = details.owner?.login || urlOwner;
+          const repoSimpleName = details.name || urlRepo;
 
           setGithubData({
             isRepo: true,
@@ -141,14 +148,20 @@ function App() {
             repos: details.forks_count || 0,
             owner: ownerName
           });
+
+          // Odmah vučemo feed jer smo u Repo mode-u
           loadActivityFeed(ownerName, repoSimpleName, "All");
         }
+
+        // Tek kad je sve spremno, prikazujemo rezultate
         setHasSearched(true);
+
       } else {
         alert(data.error || "Nije pronađeno");
       }
     } catch (error) {
       console.error("Greška pri povezivanju:", error);
+      alert("Server nije dostupan. Proveri backend.");
     }
   };
 
