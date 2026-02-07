@@ -39,31 +39,28 @@ const Navbar = ({ isInApp, userRole, handleLogout, goHome }) => {
       <div>
         <span style={linkStyle} onClick={goHome}>HOME</span>
 
-        {/* Ako NIJE ulogovan vidi Trends, ako JESTE vidi Following */}
-        {!isInApp ? (
-          <span style={linkStyle}>GITHUB TRENDS</span>
-        ) : (
-          <span
-            style={{ ...linkStyle, color: '#ffd700' }}
-            onClick={() => navigate("/following")}
-          >
-            ★ FOLLOWING
-          </span>
-        )}
-
-        {isInApp ? (
+        {/* Prikazujemo Following i History samo ako je korisnik ulogovan */}
+        {isInApp && (
           <>
-            {/* My History vodi na watchlist (istoriju pretraga) */}
+            <span
+              style={{ ...linkStyle, color: '#89cff0' }}
+              onClick={() => navigate("/following")}
+            >
+               FOLLOWING
+            </span>
             <span style={linkStyle} onClick={() => navigate("/history")}>
                 MY HISTORY
             </span>
-            <span
-              style={{ ...linkStyle, color: '#ff4d4d' }}
-              onClick={handleLogout}
-            >
-              LOGOUT
-            </span>
           </>
+        )}
+
+        {isInApp ? (
+          <span
+            style={{ ...linkStyle, color: '#ff4d4d' }}
+            onClick={handleLogout}
+          >
+            LOGOUT
+          </span>
         ) : (
           <span style={linkStyle} onClick={() => navigate("/auth")}>LOGIN / SIGNUP</span>
         )}

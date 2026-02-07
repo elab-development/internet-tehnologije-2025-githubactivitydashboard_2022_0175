@@ -19,8 +19,8 @@ class User(db.Model):
     avatar_url = db.Column(db.String(255), nullable=True)  # DODAJ OVO
 
     # Veze
-    follows = db.relationship('UserRepoFollow', backref='user', lazy=True)
-    searches = db.relationship('SearchHistory', backref='user', lazy=True)
+    follows = db.relationship('UserRepoFollow', backref='user', lazy=True, cascade="all, delete-orphan")
+    searches = db.relationship('SearchHistory', backref='user', lazy=True, cascade="all, delete-orphan")
 
 
 

@@ -2,12 +2,25 @@ import React from 'react';
 import InfoCard from '../InfoCard';
 
 const UserResults = ({ githubData, onActivityClick }) => {
-  const { isRepo, avatar, repos, followers, gists, repoName, language, stars, reposList, owner } = githubData;
+  // Dodala sam issues i forks u destructuring da bi InfoCard-ovi bili tačni
+  const {
+    isRepo,
+    avatar,
+    repos,
+    followers,
+    gists,
+    repoName,
+    language,
+    stars,
+    issues,
+    reposList,
+    owner
+  } = githubData;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '30px' }}>
 
-      {/* PROFILNI DEO - Dinamički menja naslov zavisno od toga da li je User ili Repo */}
+      {/* PROFILNI DEO */}
       <div style={{ textAlign: 'center' }}>
         <img
           src={avatar}
@@ -21,12 +34,12 @@ const UserResults = ({ githubData, onActivityClick }) => {
           }}
         />
         <h3 style={{ color: '#89cff0', marginTop: '15px', textTransform: 'uppercase', letterSpacing: '2px' }}>
-          {repoName}
+          {isRepo ? repoName : owner}
         </h3>
         {isRepo && <p style={{ color: '#f5e6d3', opacity: 0.7, fontSize: '14px' }}>Repository Overview</p>}
       </div>
 
-      {/* STATISTIKA - InfoCard-ovi sa tvojim stilom */}
+      {/* STATISTIKA - Sada povezana sa novom logikom iz App.js */}
       <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', width: '100%', gap: '15px' }}>
         <InfoCard
           title={isRepo ? "Stars" : "Repositories"}
@@ -41,24 +54,24 @@ const UserResults = ({ githubData, onActivityClick }) => {
           subValue={isRepo ? "Main Tech" : "Real-time"}
         />
         <InfoCard
-          title={isRepo ? "Forks" : "Public Gists"}
-          value={isRepo ? repos : gists}
-          icon={isRepo ? "🍴" : "🐝"}
-          subValue={isRepo ? "Total Forks" : "Active"}
+          title={isRepo ? "Issues" : "Public Gists"} // Promenila sam Forks u Issues radi bolje preglednosti
+          value={isRepo ? issues : gists}
+          icon={isRepo ? "❗" : "🐝"}
+          subValue={isRepo ? "Open Issues" : "Active"}
         />
       </div>
 
-      {/* LISTA REPOZITORIJUMA - Prikazuje se samo ako smo u "User" modu */}
+      {/* LISTA REPOZITORIJUMA */}
       {!isRepo && reposList && reposList.length > 0 && (
         <div style={{ width: '100%', maxWidth: '800px', marginTop: '20px' }}>
           <h3 style={{ color: '#89cff0', borderBottom: '2px solid #89cff0', paddingBottom: '10px', marginBottom: '20px' }}>
-            User Repositories <span style={{fontSize: '12px', opacity: 0.6}}>(Click to view Feed)</span>
+            User Repositories <span style={{fontSize: '12px', opacity: 0.6}}>(Click to view Feed & Stats)</span>
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
             {reposList.map((repo) => (
               <div
                 key={repo.id}
-                // Pozivamo loadActivityFeed iz App.js
+                // KLJUČNO: onActivityClick sada pokreće handleSelectRepo iz App.js
                 onClick={() => onActivityClick(owner, repo.name)}
                 style={{
                   backgroundColor: 'rgba(245, 230, 211, 0.05)',

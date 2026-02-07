@@ -56,7 +56,7 @@ const FollowingList = ({ userId }) => {
             {repos.length === 0 ? (
                 <div style={{ textAlign: 'center', opacity: 0.5, marginTop: '50px' }}>
                     <p>You haven't followed any repositories yet.</p>
-                    <p style={{ fontSize: '12px' }}>Click the heart icon on a repository to see it here!</p>
+                    <p style={{ fontSize: '12px' }}>Click FOLLOW on a repository to see it here!</p>
                 </div>
             ) : (
                 <div style={{ display: 'grid', gap: '15px' }}>
