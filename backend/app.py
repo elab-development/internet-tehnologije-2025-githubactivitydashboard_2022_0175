@@ -76,17 +76,21 @@ def get_users():
 
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"message": "Korisnik nije pronađen"}), 404
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"message": "Korisnik nije pronađen"}), 404
 
+        # Zaštita za tebe i Unu
+        if user.username in ['Anja', 'Una']:
+            return jsonify({"message": "Ne možete obrisati glavnog admina!"}), 403
 
-    if user.username in ['Anja','Una'] :
-        return jsonify({"message": "Ne možete obrisati glavnog admina!"}), 403
-
-    db.session.delete(user)
-    db.session.commit()
-    return jsonify({"message": f"Korisnik {user.username} je obrisan"}), 200
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({"message": f"Korisnik {user.username} je obrisan"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": f"Greška na serveru: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)

@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const Navbar = ({ isInApp, setIsInApp, userRole }) => {
-  const navigate = useNavigate(); // Koristimo navigate hook direktno u Navbaru
+const Navbar = ({ isInApp, userRole, handleLogout, goHome }) => {
+  const navigate = useNavigate();
 
   const navStyle = {
     display: 'flex',
@@ -22,32 +22,44 @@ const Navbar = ({ isInApp, setIsInApp, userRole }) => {
     textTransform: 'uppercase',
     letterSpacing: '1px',
     color: '#89cff0',
-    textDecoration: 'none'
+    textDecoration: 'none',
+    transition: '0.3s'
   };
 
   return (
     <nav style={navStyle}>
+      {/* Logo klik resetuje sve na početnu */}
       <div
         style={{ fontSize: '20px', fontWeight: 'bold', letterSpacing: '2px', cursor: 'pointer' }}
-        onClick={() => navigate("/")} // Vodi na home rutu
+        onClick={goHome}
       >
         <span style={{ color: '#89cff0' }}>ITEH</span>
       </div>
 
       <div>
-        <span style={linkStyle} onClick={() => navigate("/")}>HOME</span>
+        <span style={linkStyle} onClick={goHome}>HOME</span>
 
-        <span style={linkStyle}>GITHUB TRENDS</span>
+        {/* Ako NIJE ulogovan vidi Trends, ako JESTE vidi Following */}
+        {!isInApp ? (
+          <span style={linkStyle}>GITHUB TRENDS</span>
+        ) : (
+          <span
+            style={{ ...linkStyle, color: '#ffd700' }}
+            onClick={() => navigate("/following")}
+          >
+            ★ FOLLOWING
+          </span>
+        )}
 
         {isInApp ? (
           <>
-            <span style={linkStyle}>MY HISTORY</span>
+            {/* My History vodi na watchlist (istoriju pretraga) */}
+            <span style={linkStyle} onClick={() => navigate("/history")}>
+                MY HISTORY
+            </span>
             <span
               style={{ ...linkStyle, color: '#ff4d4d' }}
-              onClick={() => {
-                setIsInApp(false);
-                navigate("/"); // Vodi na home nakon logout-a
-              }}
+              onClick={handleLogout}
             >
               LOGOUT
             </span>
@@ -59,7 +71,7 @@ const Navbar = ({ isInApp, setIsInApp, userRole }) => {
 
       {isInApp && (
         <div style={{ fontSize: '10px', opacity: 0.7 }}>
-          LOGGED AS: <span style={{ color: '#89cff0' }}>{userRole}</span>
+          LOGGED AS: <span style={{ color: '#89cff0' }}>{userRole?.toUpperCase()}</span>
         </div>
       )}
     </nav>

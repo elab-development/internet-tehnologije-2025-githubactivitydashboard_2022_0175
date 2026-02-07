@@ -10,6 +10,8 @@ import UserResults from './components/UserResults';
 import UserTable from './components/UserTable';
 import ActivityDetails from './components/ActivityDetails';
 import ActivityFeed from './components/ActivityFeed';
+import FollowingList from './components/FollowingList';
+import SearchHistory from './components/SearchHistory'; // DODAJ OVO
 
 function App() {
   const navigate = useNavigate();
@@ -30,6 +32,10 @@ function App() {
   const [activities, setActivities] = useState([]);
   const [filterType, setFilterType] = useState("All");
 
+  // NOVO ZA WATCHLIST
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [currentDbRepoId, setCurrentDbRepoId] = useState(null);
+
   const [githubData, setGithubData] = useState({
     repos: "0",
     followers: "0",
@@ -41,7 +47,9 @@ function App() {
     stars: 0,
     issues: 0,
     reposList: [],
-    owner: ""
+    owner: "",
+    full_name: "", // Dodato za watchlist
+    html_url: ""   // Dodato za watchlist
   });
 
   // --- HANDLERS ---
@@ -89,116 +97,135 @@ function App() {
     }
   };
 
+
   const handleSearch = async () => {
-    if (!username) return;
+      if (!username) return;
 
-    // --- NOVO: Resetujemo prethodne rezultate da se ne bi mešali ---
-    setHasSearched(false);
-    setActivities([]);
-    setFilterType("All");
+      // Početni reset stanja
+      setHasSearched(false);
+      setActivities([]);
+      setFilterType("All");
+      setIsFollowing(false);
+      setCurrentDbRepoId(null);
 
-    const cleanInput = username.trim().replace('@', ''); // Brišemo @ ako korisnik ukuca @username
-    const isRepoSearch = cleanInput.includes('/');
+      const cleanInput = username.trim().replace('@', '');
+      const isRepoSearch = cleanInput.includes('/');
 
-    const endpoint = !isRepoSearch
-      ? 'http://localhost:5000/api/search/repositories'
-      : 'http://localhost:5000/api/repository/details';
+      const endpoint = !isRepoSearch
+        ? 'http://localhost:5000/api/search/repositories'
+        : 'http://localhost:5000/api/repository/details';
 
-    const bodyData = !isRepoSearch
-      ? { query: cleanInput, user_id: isInApp ? currentUserId : null }
-      : { url: cleanInput, user_id: isInApp ? currentUserId : null };
+      const bodyData = !isRepoSearch
+        ? { query: cleanInput, user_id: isInApp ? currentUserId : null }
+        : { url: cleanInput, user_id: isInApp ? currentUserId : null };
 
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bodyData),
-      });
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bodyData),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (response.ok) {
-        if (!isRepoSearch) {
-          // SLUČAJ 1: Pretraga korisnika
-          setGithubData({
-            isRepo: false,
-            repoName: "",
-            avatar: data.avatar_url,
-            repos: data.public_repos || 0,
-            followers: data.followers || 0,
-            gists: data.following || 0,
-            reposList: data.repos_list || [],
-            owner: data.login
-          });
+        if (response.ok) {
+          if (!isRepoSearch) {
+            // --- USER MODE ---
+            setGithubData({
+              isRepo: false,
+              repoName: "",
+              avatar: data.avatar_url,
+              repos: data.public_repos || 0,
+              followers: data.followers || 0,
+              gists: data.following || 0,
+              reposList: data.repos_list || [],
+              owner: data.login,
+              full_name: "",
+              html_url: ""
+            });
+          } else {
+            // --- REPO MODE ---
+            const details = data.repo_data || data;
+            const [urlOwner, urlRepo] = cleanInput.split('/');
+            const ownerName = details.owner?.login || urlOwner;
+            const repoSimpleName = details.name || urlRepo;
+            const repoFullName = details.full_name;
+
+            setGithubData({
+              isRepo: true,
+              repoName: repoSimpleName,
+              avatar: details.owner?.avatar_url || details.avatar_url,
+              language: details.language || "N/A",
+              stars: details.stargazers_count || 0,
+              issues: details.open_issues_count || 0,
+              repos: details.forks_count || 0,
+              owner: ownerName,
+              full_name: repoFullName,
+              html_url: details.html_url
+            });
+
+            // --- KLJUČNI DEO: PROVERA DA LI JE REPO VEĆ ZAPRAĆEN ---
+            if (isInApp && currentUserId) {
+              try {
+                const checkRes = await fetch(`http://localhost:5000/api/following?user_id=${currentUserId}`);
+                if (checkRes.ok) {
+                  const followingList = await checkRes.json();
+
+                  // Tražimo podudaranje u bazi (ignorišemo velika/mala slova)
+                  const foundRepo = followingList.find(
+                    r => r.full_name.toLowerCase() === repoFullName.toLowerCase()
+                  );
+
+                  if (foundRepo) {
+                    setIsFollowing(true);
+                    setCurrentDbRepoId(foundRepo.repo_id); // Čuvamo ID iz baze za Unfollow
+                  }
+                }
+              } catch (err) {
+                console.error("Greška pri proveri following statusa:", err);
+              }
+            }
+
+            loadActivityFeed(ownerName, repoSimpleName, "All");
+          }
+          setHasSearched(true);
         } else {
-          // SLUČAJ 2: Direktna pretraga repoa
-          const details = data.repo_data || data;
-          const [urlOwner, urlRepo] = cleanInput.split('/');
-
-          const ownerName = details.owner?.login || urlOwner;
-          const repoSimpleName = details.name || urlRepo;
-
-          setGithubData({
-            isRepo: true,
-            repoName: repoSimpleName,
-            avatar: details.owner?.avatar_url || details.avatar_url,
-            language: details.language || "N/A",
-            stars: details.stargazers_count || 0,
-            issues: details.open_issues_count || 0,
-            repos: details.forks_count || 0,
-            owner: ownerName
-          });
-
-          // Odmah vučemo feed jer smo u Repo mode-u
-          loadActivityFeed(ownerName, repoSimpleName, "All");
+          alert(data.error || "Nije pronađeno");
         }
-
-        // Tek kad je sve spremno, prikazujemo rezultate
-        setHasSearched(true);
-
-      } else {
-        alert(data.error || "Nije pronađeno");
+      } catch (error) {
+        console.error("Greška pri povezivanju:", error);
+        alert("Server nije dostupan.");
       }
-    } catch (error) {
-      console.error("Greška pri povezivanju:", error);
-      alert("Server nije dostupan. Proveri backend.");
-    }
-  };
+    };
 
   const handleFilterChange = (e) => {
     const selected = e.target.value;
     setFilterType(selected);
-
     const owner = githubData.owner;
     const repo = githubData.repoName;
-
-    console.log("Filtriranje:", selected, "za", owner, "/", repo);
-
     if (owner && repo) {
       loadActivityFeed(owner, repo, selected);
     }
   };
 
-  const handleActivityClick = async (owner, repo, sha) => {
-    // --- DEBUG ISPIS U KONZOLI ---
-    console.log("%c>>> KLIK NA TABELU <<<", "color: #89cff0; font-weight: bold; font-size: 12px;");
-    console.log("Poslat SHA backendu:", sha);
-    console.log("Za repozitorijum:", `${owner}/${repo}`);
+  const goHome = () => {
+    setHasSearched(false);
+    setUsername("");
+    setActivities([]);
+    setShowTable(false);
+    setIsFollowing(false);
+    navigate("/");
+  };
 
+  const handleActivityClick = async (owner, repo, sha) => {
     if (!sha) {
       alert("Detalji su dostupni samo za Push aktivnosti.");
       return;
     }
-
     try {
       const response = await fetch(`http://localhost:5000/api/activity/details/${owner}/${repo}/${sha}`);
       const data = await response.json();
-
       if (response.ok) {
-        // --- PROVERA ŠTA JE BACKEND VRATIO ---
-        console.log("Backend vratio podatke za SHA:", data.hash);
-        console.log("Autor u podacima:", data.author);
-
         setSelectedActivity(data);
         setShowModal(true);
       } else {
@@ -209,6 +236,72 @@ function App() {
     }
   };
 
+  // --- NOVO: HANDLE FOLLOW TOGGLE ---
+  // --- IZMENJENI HANDLE FOLLOW TOGGLE ---
+    const handleToggleFollow = async () => {
+      // 1. Provera logina
+      if (!currentUserId) {
+          alert("You must be logged in to follow repositories!");
+          return;
+      }
+
+      // Provera da li imamo podatke o repozitorijumu
+      if (!githubData.full_name) {
+          alert("Repository data is missing. Please try searching again.");
+          return;
+      }
+
+      if (isFollowing) {
+        // --- UNFOLLOW (DELETE) ---
+        try {
+          // Koristimo endpoint koji smo definisali u watchlist_routes.py
+          const response = await fetch(`http://localhost:5000/api/watchlist/unfollow?user_id=${currentUserId}&repo_id=${currentDbRepoId}`, {
+            method: 'DELETE',
+          });
+
+          if (response.ok) {
+            setIsFollowing(false);
+            setCurrentDbRepoId(null); // Brišemo ID jer više ne pratimo
+            alert("Removed from following list!");
+          } else {
+            const errorData = await response.json();
+            alert("Error: " + (errorData.error || "Could not unfollow"));
+          }
+        } catch (error) {
+          console.error("Unfollow error:", error);
+        }
+      } else {
+        // --- FOLLOW (POST) ---
+        try {
+          const response = await fetch('http://localhost:5000/api/watchlist/follow', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: currentUserId,
+              repo_data: {
+                full_name: githubData.full_name,
+                html_url: githubData.html_url // Ovo je url koji se čuva u bazi
+              }
+            })
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            setIsFollowing(true);
+            // BACKEND VRAĆA repo_id NAKON ŠTO GA UPIŠE U UserRepoFollow TABELU
+            setCurrentDbRepoId(data.repo_id);
+            alert("Successfully following " + githubData.full_name);
+          } else {
+            alert("Error: " + (data.error || "Could not follow repository"));
+          }
+        } catch (error) {
+          console.error("Follow error:", error);
+          alert("Server error while trying to follow.");
+        }
+      }
+    };
+
   const smallLinkStyle = {
     marginTop: '20px', background: 'none', border: 'none', color: '#89cff0', cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold'
   };
@@ -217,10 +310,11 @@ function App() {
     <div className="App" style={{ backgroundColor: '#1e2645', minHeight: '100vh', color: '#f5e6d3', fontFamily: '"Georgia", serif' }}>
       <Navbar
         isInApp={isInApp}
-        setIsInApp={setIsInApp}
         userRole={userRole}
         handleLogout={handleLogout}
-        setView={(target) => navigate(target === "auth" ? "/auth" : "/")}
+        goHome={goHome}
+        // setView nam tehnički više ne treba ako koristimo goHome i navigate unutar Navbara,
+        // ali ga možeš ostaviti ako ga koristiš negde drugde
       />
 
       <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '50px', marginTop: '40px' }}>
@@ -235,7 +329,8 @@ function App() {
               </button>
             </div>
           } />
-
+          <Route path="/following" element={<FollowingList userId={currentUserId} />} />
+          <Route path="/history" element={<SearchHistory userId={currentUserId} />} />
           <Route path="/" element={
             <div style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               {!isInApp && !hasSearched && <Header />}
@@ -253,11 +348,31 @@ function App() {
 
               {hasSearched && (
                 <div style={{ width: '100%' }}>
+                  {/* DUGME ZA FOLLOW PRIKAZUJEMO SAMO AKO JE REPO MOD I KORISNIK JE LOGOVAN */}
+                  {githubData.isRepo && isInApp && (
+                    <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+                      <button
+                        onClick={handleToggleFollow}
+                        style={{
+                          backgroundColor: isFollowing ? 'transparent' : '#89cff0',
+                          color: isFollowing ? '#ff4d4d' : '#1e2645',
+                          border: isFollowing ? '2px solid #ff4d4d' : 'none',
+                          padding: '10px 25px',
+                          borderRadius: '25px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          transition: '0.3s'
+                        }}
+                      >
+                        {isFollowing ? '❤️ UNFOLLOW REPOSITORY' : '🤍 FOLLOW REPOSITORY'}
+                      </button>
+                    </div>
+                  )}
+
                   {activities.length === 0 && filterType === "All" ? (
                     <UserResults
                       githubData={githubData}
                       onActivityClick={(owner, repo) => {
-                        // Ažuriramo stanje na TAČAN repo na koji je kliknuto
                         setGithubData(prev => ({
                           ...prev,
                           owner: owner,

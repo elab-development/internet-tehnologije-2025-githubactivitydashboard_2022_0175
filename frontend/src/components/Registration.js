@@ -41,7 +41,7 @@ function Registration({ onRegisterSuccess }) {
 
   return (
     <div style={{ padding: '10px', maxWidth: '300px', margin: '0 auto' }}>
-      <h3 style={{ textAlign: 'center', color: '#301142' }}>Sign Up</h3>
+      <h3 style={{ textAlign: 'center', color: '#301142' }}>SIGN UP</h3>
       <form onSubmit={handleSubmit}>
         <input
           placeholder="Username"

@@ -26,13 +26,14 @@ class RepositoryService:
             repo_id=repo.repo_id
         ).first()
 
+        # U RepositoryService.py unutar follow_repository metode:
         if not existing_follow:
             new_follow = UserRepoFollow(user_id=user_id, repo_id=repo.repo_id)
             db.session.add(new_follow)
             db.session.commit()
-            return {"message": "Successfully followed"}, 201
+            return {"message": "Successfully followed", "repo_id": repo.repo_id}, 201
 
-        return {"message": "Already following this repository"}, 200
+        return {"message": "Already following this repository", "repo_id": repo.repo_id}, 200
 
     @staticmethod
     def unfollow_repository(user_id, repo_id):

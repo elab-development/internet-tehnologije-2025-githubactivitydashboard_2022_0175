@@ -16,20 +16,23 @@ def get_repo_details_route():
         if not repo_url:
             return jsonify({"error": "URL is required"}), 400
 
-        # Pozivamo servis da izvuče podatke sa GitHub-a
         details = GitHubService.get_repo_details(repo_url)
 
         if not details:
             return jsonify({"error": "Repository not found on GitHub"}), 404
 
-        # Ako je korisnik ulogovan, sačuvaj u istoriju
+        # --- OVDE JE BILA GREŠKA, EVO POPRAVKE ---
         if user_id:
-            message, status_code = RepositoryService.follow_repository(user_id, details)
+            from services.search_service import SearchService  # Importuj ovde ako nije na vrhu
+            # Umesto follow_repository, zovemo log_search za istoriju!
+            SearchService.log_search(user_id, repo_url, "repo_search")
+            db_message = "Search logged in history"
         else:
-            message = "Guest mode: Data not saved"
-            status_code = 200
+            db_message = "Guest mode: Data not saved"
 
-        return jsonify({"db_status": message, "repo_data": details}), status_code
+        # Vraćamo status 200 (OK), a ne status od follow servisa
+        return jsonify({"db_status": db_message, "repo_data": details}), 200
+
     except Exception as e:
         print(f"Greška u repository/details: {e}")
         return jsonify({"error": str(e)}), 500
