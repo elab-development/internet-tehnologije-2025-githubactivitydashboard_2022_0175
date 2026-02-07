@@ -25,10 +25,10 @@ function App() {
   const [showTable, setShowTable] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
 
-  // State za Use Case 2.1.4
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [activities, setActivities] = useState([]);
+  const [filterType, setFilterType] = useState("All");
 
   const [githubData, setGithubData] = useState({
     repos: "0",
@@ -45,6 +45,7 @@ function App() {
   });
 
   // --- HANDLERS ---
+
   const handleLoginSuccess = (role, name, id) => {
     const finalRole = role === 'Korisnik' ? 'user' : role;
     setUserRole(finalRole);
@@ -65,14 +66,37 @@ function App() {
     window.location.reload();
   };
 
+  const loadActivityFeed = async (owner, repo, type = "All") => {
+    try {
+      const activityResponse = await fetch('http://localhost:5000/api/activity/list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner: owner,
+          repo: repo,
+          filter: type
+        })
+      });
+
+      const activityData = await activityResponse.json();
+      if (activityResponse.ok) {
+        setActivities(activityData);
+      } else {
+        console.error("Backend error:", activityData.error);
+      }
+    } catch (error) {
+      console.error("Greška pri učitavanju feed-a:", error);
+    }
+  };
+
   const handleSearch = async () => {
     if (!username) return;
-    const actualType = username.includes('/') ? 'repo' : 'user';
-    const endpoint = actualType === 'user'
+    const isRepoSearch = username.includes('/');
+    const endpoint = !isRepoSearch
       ? 'http://localhost:5000/api/search/repositories'
       : 'http://localhost:5000/api/repository/details';
 
-    const bodyData = actualType === 'user'
+    const bodyData = !isRepoSearch
       ? { query: username.trim(), user_id: isInApp ? currentUserId : null }
       : { url: username.trim(), user_id: isInApp ? currentUserId : null };
 
@@ -86,11 +110,14 @@ function App() {
       const data = await response.json();
 
       if (response.ok) {
-        setActivities([]); // Čistimo prethodni feed pri novoj pretrazi
-        if (actualType === 'user') {
+        setActivities([]);
+        setFilterType("All");
+
+        if (!isRepoSearch) {
+          // SLUČAJ 1: Pretraga korisnika (npr. torvalds)
           setGithubData({
             isRepo: false,
-            repoName: data.login,
+            repoName: "", // Bitno: nema repoa još uvek
             avatar: data.avatar_url,
             repos: data.public_repos || 0,
             followers: data.followers || 0,
@@ -99,19 +126,22 @@ function App() {
             owner: data.login
           });
         } else {
+          // SLUČAJ 2: Direktna pretraga repoa (npr. facebook/react)
           const details = data.repo_data || data;
+          const ownerName = details.owner?.login || username.split('/')[0];
+          const repoSimpleName = details.name || username.split('/')[1];
+
           setGithubData({
             isRepo: true,
-            repoName: details.name || details.full_name,
+            repoName: repoSimpleName,
             avatar: details.owner?.avatar_url || details.avatar_url,
             language: details.language || "N/A",
             stars: details.stargazers_count || 0,
             issues: details.open_issues_count || 0,
             repos: details.forks_count || 0,
-            owner: details.owner?.login || ""
+            owner: ownerName
           });
-          // Ako je direktna pretraga repoa, odmah učitaj i feed
-          loadActivityFeed(details.owner?.login || "", details.name || details.full_name);
+          loadActivityFeed(ownerName, repoSimpleName, "All");
         }
         setHasSearched(true);
       } else {
@@ -119,67 +149,50 @@ function App() {
       }
     } catch (error) {
       console.error("Greška pri povezivanju:", error);
-      alert("Proveri Flask server!");
     }
   };
 
-  const loadActivityFeed = async (owner, repo) => {
-    try {
-      // 1. Učitavamo detalje repoa da ažuriramo gornji prikaz
-      const repoResponse = await fetch('http://localhost:5000/api/repository/details', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: `${owner}/${repo}`, user_id: currentUserId })
-      });
+  const handleFilterChange = (e) => {
+    const selected = e.target.value;
+    setFilterType(selected);
 
-      const repoData = await repoResponse.json();
+    const owner = githubData.owner;
+    const repo = githubData.repoName;
 
-      if (repoResponse.ok) {
-        const details = repoData.repo_data || repoData;
-        setGithubData({
-          isRepo: true,
-          repoName: details.name || details.full_name,
-          avatar: details.owner?.avatar_url || details.avatar_url,
-          language: details.language || "N/A",
-          stars: details.stargazers_count || 0,
-          issues: details.open_issues_count || 0,
-          repos: details.forks_count || 0,
-          owner: owner
-        });
-      }
+    console.log("Filtriranje:", selected, "za", owner, "/", repo);
 
-      // 2. Učitavamo hronološku listu aktivnosti
-      const activityResponse = await fetch('http://localhost:5000/api/activity/list', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ owner, repo })
-      });
-
-      const activityData = await activityResponse.json();
-      if (activityResponse.ok) {
-        setActivities(activityData);
-      }
-    } catch (error) {
-      console.error("Greška pri učitavanju feed-a:", error);
+    if (owner && repo) {
+      loadActivityFeed(owner, repo, selected);
     }
   };
 
   const handleActivityClick = async (owner, repo, sha) => {
+    // --- DEBUG ISPIS U KONZOLI ---
+    console.log("%c>>> KLIK NA TABELU <<<", "color: #89cff0; font-weight: bold; font-size: 12px;");
+    console.log("Poslat SHA backendu:", sha);
+    console.log("Za repozitorijum:", `${owner}/${repo}`);
+
+    if (!sha) {
+      alert("Detalji su dostupni samo za Push aktivnosti.");
+      return;
+    }
+
     try {
-      const response = await fetch('http://localhost:5000/api/activity/details', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ owner, repo, sha })
-      });
+      const response = await fetch(`http://localhost:5000/api/activity/details/${owner}/${repo}/${sha}`);
       const data = await response.json();
+
       if (response.ok) {
+        // --- PROVERA ŠTA JE BACKEND VRATIO ---
+        console.log("Backend vratio podatke za SHA:", data.hash);
+        console.log("Autor u podacima:", data.author);
+
         setSelectedActivity(data);
         setShowModal(true);
       } else {
-        alert("Detalji nisu dostupni");
+        alert("Greška: " + (data.message || "Detalji nisu pronađeni."));
       }
     } catch (error) {
-      alert("Greška pri učitavanju detalja aktivnosti");
+      console.error("Greška pri fetch-u:", error);
     }
   };
 
@@ -202,17 +215,10 @@ function App() {
           <Route path="/auth" element={
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div style={{ backgroundColor: '#f5e6d3', padding: '30px', borderRadius: '5px', color: '#301142', width: '100%', maxWidth: '350px', boxShadow: '10px 10px 0px #89cff0' }}>
-                {isLogin ? (
-                  <Login onLoginSuccess={handleLoginSuccess} />
-                ) : (
-                  <Registration onRegisterSuccess={() => setIsLogin(true)} />
-                )}
+                {isLogin ? <Login onLoginSuccess={handleLoginSuccess} /> : <Registration onRegisterSuccess={() => setIsLogin(true)} />}
               </div>
               <button onClick={() => setIsLogin(!isLogin)} style={smallLinkStyle}>
                 {isLogin ? "Don't have an account? Make one!" : "Back to Login"}
-              </button>
-              <button onClick={() => navigate("/")} style={{...smallLinkStyle, color: '#f5e6d3', opacity: 0.7}}>
-                ← Back to Home
               </button>
             </div>
           } />
@@ -223,11 +229,7 @@ function App() {
 
               {isInApp && userRole === 'Admin' && (
                 <div style={{ marginBottom: '20px', padding: '15px', border: '1px dashed #89cff0', borderRadius: '10px', textAlign: 'center', width: '100%', maxWidth: '600px' }}>
-                  <p style={{ fontSize: '12px', color: '#89cff0', marginBottom: '10px', fontWeight: 'bold' }}>ADMIN PRIVILEGES ACTIVE</p>
-                  <button
-                    onClick={() => setShowTable(!showTable)}
-                    style={{ backgroundColor: '#89cff0', color: '#1e2645', border: 'none', padding: '8px 15px', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px', textTransform: 'uppercase' }}
-                  >
+                  <button onClick={() => setShowTable(!showTable)} style={{ backgroundColor: '#89cff0', color: '#1e2645', border: 'none', padding: '8px 15px', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>
                     {showTable ? "Hide Users" : "View Users"}
                   </button>
                   {showTable && <UserTable />}
@@ -237,16 +239,51 @@ function App() {
               <SearchBox username={username} setUsername={setUsername} handleSearch={handleSearch} />
 
               {hasSearched && (
-                <>
-                  <UserResults
-                    githubData={githubData}
-                    onActivityClick={(owner, repo) => loadActivityFeed(owner, repo)}
-                  />
-                  <ActivityFeed
-                    activities={activities}
-                    onSelectDetail={handleActivityClick}
-                  />
-                </>
+                <div style={{ width: '100%' }}>
+                  {activities.length === 0 && filterType === "All" ? (
+                    <UserResults
+                      githubData={githubData}
+                      onActivityClick={(owner, repo) => {
+                        // Ažuriramo stanje na TAČAN repo na koji je kliknuto
+                        setGithubData(prev => ({
+                          ...prev,
+                          owner: owner,
+                          repoName: repo,
+                          isRepo: true
+                        }));
+                        loadActivityFeed(owner, repo, "All");
+                      }}
+                    />
+                  ) : (
+                    <div style={{ width: '100%', animation: 'fadeIn 0.5s' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <button onClick={() => { setActivities([]); setFilterType("All"); }} style={{ ...smallLinkStyle, marginTop: 0, textDecoration: 'none' }}>
+                          ← Back to repo list
+                        </button>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ fontSize: '14px', color: '#89cff0' }}>Filter by type:</span>
+                          <select
+                            value={filterType}
+                            onChange={handleFilterChange}
+                            style={{ backgroundColor: '#f5e6d3', color: '#1e2645', border: 'none', padding: '5px 10px', borderRadius: '5px', fontWeight: 'bold' }}
+                          >
+                            <option value="All">All Activities</option>
+                            <option value="Push">Commits (Rockets 🚀)</option>
+                            <option value="Watch">Stars ⭐</option>
+                            <option value="Create">New Branches 🆕</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {activities.length === 0 ? (
+                        <p style={{ textAlign: 'center', marginTop: '50px', fontSize: '18px', color: '#89cff0' }}>Nema aktivnosti ovog tipa.</p>
+                      ) : (
+                        <ActivityFeed activities={activities} onSelectDetail={handleActivityClick} />
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
 
               {!hasSearched && (
@@ -255,10 +292,10 @@ function App() {
                 </p>
               )}
 
-              {showModal && (
+              {showModal && selectedActivity && (
                 <ActivityDetails
                   details={selectedActivity}
-                  onClose={() => setShowModal(false)}
+                  onClose={() => { setShowModal(false); setSelectedActivity(null); }}
                 />
               )}
             </div>

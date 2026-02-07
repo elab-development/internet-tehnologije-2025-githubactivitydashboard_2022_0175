@@ -4,35 +4,72 @@ const ActivityDetails = ({ details, onClose }) => {
   if (!details) return null;
 
   return (
-    <div style={modalOverlayStyle}>
-      <div style={modalContentStyle}>
-        <button onClick={onClose} style={closeButtonStyle}>x</button>
-        <h2 style={{ color: '#89cff0' }}>{details.title}</h2>
-        <hr border="1px solid #333" />
+    <div style={{
+      position: 'fixed',
+      top: 0, left: 0,
+      width: '100%', height: '100%',
+      backgroundColor: 'rgba(0, 0, 0, 0.85)', // Zatamni sve iza
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 10000 // Da bude APSOLUTNO iznad svega
+    }}>
+      <div style={{
+        backgroundColor: '#1a1a2e',
+        padding: '30px',
+        borderRadius: '15px',
+        border: '2px solid #89cff0',
+        width: '90%',
+        maxWidth: '700px',
+        color: '#f5e6d3',
+        position: 'relative',
+        boxShadow: '0 0 50px rgba(0,0,0,0.5)'
+      }}>
+        <button onClick={onClose} style={{
+          position: 'absolute', top: '15px', right: '15px',
+          background: 'none', border: '1px solid #89cff0', color: '#89cff0',
+          cursor: 'pointer', borderRadius: '5px', padding: '5px 10px'
+        }}>Close X</button>
 
-        <div style={{ textAlign: 'left', marginTop: '20px' }}>
-          <p><strong>Description:</strong> {details.description}</p>
-          <p><strong>Branch:</strong> <span style={tagStyle}>{details.branch}</span></p>
-          <p><strong>Commit Hash:</strong> <code style={{ color: '#ffcc00' }}>{details.hash}</code></p>
-          <p><strong>Status:</strong> <span style={{ color: '#00ff00' }}>● {details.status}</span></p>
-          <p><strong>Author:</strong> {details.author} ({new Date(details.date).toLocaleDateString()})</p>
+        <h2 style={{ color: '#89cff0', borderBottom: '1px solid rgba(137,207,240,0.3)', paddingBottom: '10px' }}>
+          {details.title}
+        </h2>
 
-          <div style={metadataBoxStyle}>
-            <h4>Metadata (Stats)</h4>
-            <p>Total changes: {details.stats?.total}</p>
-            <p style={{ color: '#00ff00' }}>Additions: {details.stats?.additions}</p>
-            <p style={{ color: '#ff4444' }}>Deletions: {details.stats?.deletions}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
+          <div>
+            <p><strong>👤 Author:</strong> <span style={{color: '#89cff0'}}>@{details.author}</span></p>
+            <p><strong>📅 Date:</strong> {new Date(details.date).toLocaleString('sr-RS')}</p>
+            <p><strong>🔗 Hash:</strong> <code style={{fontSize: '11px'}}>{details.hash?.substring(0, 10)}</code></p>
           </div>
+          <div style={{ backgroundColor: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px' }}>
+            <h4 style={{margin: '0 0 10px 0', fontSize: '14px', color: '#89cff0'}}>METADATA:</h4>
+            <p style={{ color: '#4caf50', margin: '5px 0' }}>Added: +{details.stats?.additions}</p>
+            <p style={{ color: '#f44336', margin: '5px 0' }}>Deleted: -{details.stats?.deletions}</p>
+          </div>
+        </div>
+
+        <div style={{ marginTop: '20px' }}>
+          <strong>📝 Description:</strong>
+          <pre style={{
+            backgroundColor: 'rgba(0,0,0,0.4)', padding: '10px',
+            borderRadius: '5px', whiteSpace: 'pre-wrap', fontSize: '13px',
+            marginTop: '5px', border: '1px solid rgba(137,207,240,0.1)'
+          }}>
+            {details.description}
+          </pre>
+        </div>
+
+        <div style={{ marginTop: '20px' }}>
+          <strong>📁 Changed files:</strong>
+          <ul style={{ fontSize: '12px', opacity: 0.8, maxHeight: '100px', overflowY: 'auto' }}>
+            {details.files?.map((f, i) => (
+              <li key={i}>{f.filename}</li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
   );
 };
-
-const modalOverlayStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 };
-const modalContentStyle = { background: '#1a1a1a', padding: '30px', borderRadius: '15px', width: '90%', maxWidth: '500px', border: '1px solid #89cff0', color: 'white' };
-const tagStyle = { backgroundColor: '#89cff0', color: '#1a1a1a', padding: '2px 8px', borderRadius: '5px', fontSize: '12px' };
-const metadataBoxStyle = { marginTop: '15px', padding: '10px', backgroundColor: '#2a2a2a', borderRadius: '8px' };
-const closeButtonStyle = { float: 'right', background: 'none', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer' };
 
 export default ActivityDetails;

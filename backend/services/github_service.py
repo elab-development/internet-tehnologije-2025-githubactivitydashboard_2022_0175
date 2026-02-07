@@ -75,3 +75,37 @@ class GitHubService:
         if response.status_code == 200:
             return response.json()
         return None
+
+    @staticmethod
+    def get_commit_details(owner, repo, sha):
+        url = f"https://api.github.com/repos/{owner}/{repo}/commits/{sha}"
+        headers = GitHubService.get_headers()
+        print(f"DEBUG: Pozivam GitHub API: {url}")
+
+        response = requests.get(url, headers=headers)
+
+        print(f"DEBUG: Status kod: {response.status_code}")
+        if response.status_code != 200:
+            print(f"DEBUG: GitHub Error Response: {response.text}")
+            return None
+
+        data = response.json()
+
+        # --- OVDE JE BILA GREŠKA, SAD POPRAVLJAMO ---
+        # Umesto 'name', prvo tražimo 'login' (to je ono @jacobtylerwalls)
+        author_login = data.get('author', {}).get('login')
+
+        # Ako GitHub slučajno nema login (desi se kod starih komita),
+        # tek onda uzmi name kao rezervu
+        if not author_login:
+            author_login = data.get('commit', {}).get('author', {}).get('name')
+
+        return {
+            "title": data.get('commit', {}).get('message', '').split('\n')[0],
+            "description": data.get('commit', {}).get('message', ''),
+            "author": author_login,  # SAD ĆE BITI @USERNAME
+            "date": data.get('commit', {}).get('author', {}).get('date'),
+            "hash": data.get('sha'),
+            "stats": data.get('stats'),
+            "files": data.get('files', [])
+        }

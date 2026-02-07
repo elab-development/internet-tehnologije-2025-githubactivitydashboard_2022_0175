@@ -1,91 +1,98 @@
 from flask import Blueprint, jsonify, request
 from services.github_service import GitHubService
 from services.repository_service import RepositoryService
-activity_bp = Blueprint('activity', __name__)
 import requests
 
+activity_bp = Blueprint('activity', __name__)
+
+
 @activity_bp.route('/api/repository/details', methods=['POST'])
-def get_details():
-    data = request.json
-    repo_url = data.get('url')
-    user_id = data.get('user_id') # Može biti None (gost) ili ID (ulogovan)
-
-    # 1. Uvek povuci detalje sa GitHub-a
-    details = GitHubService.get_repo_details(repo_url)
-
-    if not details:
-        return jsonify({"error": "Repository not found"}), 404
-
-    # 2. Logika za bazu: Čuvaj samo ako user_id postoji
-    if user_id:
-        message, status_code = RepositoryService.follow_repository(user_id, details)
-    else:
-        # Ako je gost, samo obavesti front da nije čuvano u bazu
-        message = "Guest mode: Data not saved to history"
-        status_code = 200
-
-    # 3. Vrati podatke Frontendu
-    return jsonify({
-        "db_status": message,
-        "repo_data": details
-    }), status_code
-
-@activity_bp.route('/api/activity/details', methods=['POST'])
-def get_activity_details():
+def get_repo_details_route():
+    try:
         data = request.json
-        owner = data.get('owner')
-        repo = data.get('repo')
-        sha = data.get('sha') # Commit hash je ključ za detalje
+        repo_url = data.get('url')
+        user_id = data.get('user_id')
 
-        if not all([owner, repo, sha]):
-            return jsonify({"error": "Nedostaju podaci"}), 400
+        if not repo_url:
+            return jsonify({"error": "URL is required"}), 400
 
-        # Pozivamo GitHub API za specifičan commit
-        url = f"https://api.github.com/repos/{owner}/{repo}/commits/{sha}"
+        # Pozivamo servis da izvuče podatke sa GitHub-a
+        details = GitHubService.get_repo_details(repo_url)
+
+        if not details:
+            return jsonify({"error": "Repository not found on GitHub"}), 404
+
+        # Ako je korisnik ulogovan, sačuvaj u istoriju
+        if user_id:
+            message, status_code = RepositoryService.follow_repository(user_id, details)
+        else:
+            message = "Guest mode: Data not saved"
+            status_code = 200
+
+        return jsonify({"db_status": message, "repo_data": details}), status_code
+    except Exception as e:
+        print(f"Greška u repository/details: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# --- RUTA ZA TABELU (AKTIVNOSTI) ---
+@activity_bp.route('/api/activity/list', methods=['POST'])
+def get_activity_list():
+    try:
+        data = request.json
+        owner, repo, filter_type = data.get('owner'), data.get('repo'), data.get('filter', 'All')
+        url = f"https://api.github.com/repos/{owner}/{repo}/events?per_page=100"
         headers = GitHubService.get_headers()
         response = requests.get(url, headers=headers)
 
-        if response.status_code == 200:
-            commit_data = response.json()
-            # Pakujemo samo ono što nam scenario traži
-            details = {
-                "title": commit_data['commit']['message'].split('\n')[0],
-                "description": commit_data['commit']['message'],
-                "branch": "main",  # GitHub API ne vraća direktno granu iz commit-a, ostavljamo default ili doradjujemo
-                "hash": commit_data['sha'],
-                "status": "Success", # Može se vaditi iz check-runs API-ja, za sada fiksno
-                "author": commit_data['commit']['author']['name'],
-                "date": commit_data['commit']['author']['date'],
-                "stats": commit_data.get('stats', {}) # Broj izmenjenih linija (povezana metadata)
-            }
-            return jsonify(details), 200
+        events = response.json()
+        activity_feed = []
+        for event in events:
+            raw_type = event.get("type", "").replace("Event", "")
+            if filter_type != "All" and raw_type != filter_type: continue
 
-        return jsonify({"error": "Greska pri ucitavanju detalja aktivnosti."}), 404
-@activity_bp.route('/api/activity/list', methods=['POST'])
-def get_activity_list():
-    data = request.json
-    owner = data.get('owner')
-    repo = data.get('repo')
+            pusher_login = event.get("actor", {}).get("login")
+            payload = event.get("payload", {})
+            commits = payload.get("commits", [])
 
-    # GitHub "Events" API je najbolji za Feed jer pokriva commit-ove, pull request-ove, itd.
-    url = f"https://api.github.com/repos/{owner}/{repo}/events"
+            sha = commits[0].get("sha") if commits else payload.get("head")
+            title = commits[0].get("message", "").split('\n')[0] if commits else f"Activity: {raw_type}"
+
+            activity_feed.append({
+                "id": event.get("id"),
+                "type": raw_type,
+                "author": pusher_login,
+                "date": event.get("created_at"),
+                "title": title,
+                "sha": sha,
+                "repo_full": f"{owner}/{repo}"
+            })
+            if len(activity_feed) >= 20: break
+        return jsonify(activity_feed), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# --- RUTA ZA MODAL (DETALJI KOMITA) ---
+@activity_bp.route('/api/activity/details/<owner>/<repo>/<sha>', methods=['GET'])
+def get_activity_details(owner, repo, sha):
+    url = f"https://api.github.com/repos/{owner}/{repo}/commits/{sha}"
     headers = GitHubService.get_headers()
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
-        events = response.json()
-        activity_feed = []
+        data = response.json()
 
-        for event in events[:20]: # Uzimamo poslednjih 20 aktivnosti
-            activity_feed.append({
-                "id": event.get("id"),
-                "type": event.get("type").replace("Event", ""),
-                "author": event.get("actor", {}).get("login"),
-                "date": event.get("created_at"),
-                "title": event.get("payload", {}).get("commits", [{}])[0].get("message", "No description") if event.get("type") == "PushEvent" else f"Activity: {event.get('type')}",
-                "sha": event.get("payload", {}).get("commits", [{}])[0].get("sha") if event.get("type") == "PushEvent" else None,
-                "repo_full": f"{owner}/{repo}"
-            })
-        return jsonify(activity_feed), 200
+        author_display = data.get("committer", {}).get("login") or data.get("author", {}).get("login")
+        if not author_display:
+            author_display = data.get("commit", {}).get("author", {}).get("name")
 
-    return jsonify({"error": "Aktivnosti nisu dostupne"}), 404
+        return jsonify({
+            "title": data.get("commit", {}).get("message", "").split('\n')[0],
+            "author": author_display,
+            "date": data.get("commit", {}).get("author", {}).get("date"),
+            "hash": data.get("sha"),
+            "description": data.get("commit", {}).get("message"),
+            "stats": data.get("stats"),
+            "files": data.get("files", [])
+        }), 200
+
+    return jsonify({"error": "Commit not found"}), 404
