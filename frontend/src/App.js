@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 import Login from './components/Login';
@@ -8,6 +8,8 @@ import Header from './components/Header';
 import SearchBox from './components/SearchBox';
 import UserResults from './components/UserResults';
 import UserTable from './components/UserTable';
+import ActivityDetails from './components/ActivityDetails';
+import ActivityFeed from './components/ActivityFeed';
 
 function App() {
   const navigate = useNavigate();
@@ -23,6 +25,11 @@ function App() {
   const [showTable, setShowTable] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
 
+  // State za Use Case 2.1.4
+  const [selectedActivity, setSelectedActivity] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [activities, setActivities] = useState([]);
+
   const [githubData, setGithubData] = useState({
     repos: "0",
     followers: "0",
@@ -32,7 +39,9 @@ function App() {
     repoName: "",
     language: "",
     stars: 0,
-    issues: 0
+    issues: 0,
+    reposList: [],
+    owner: ""
   });
 
   // --- HANDLERS ---
@@ -53,19 +62,12 @@ function App() {
     setLoggedInName("");
     setShowTable(false);
     setCurrentUserId(null);
-
-    // Potpuni refresh za čišćenje svega
     window.location.reload();
   };
 
-  const handleSearch = async (typeFromBox) => {
+  const handleSearch = async () => {
     if (!username) return;
-
-    // INTELIGENTNA PROVERA:
-    // Ako u polju nema "/", to je uvek USER pretraga, čak i ako je prekidač na 'repo'.
-    // Ovo rešava tvoj 404 problem u konzoli.
     const actualType = username.includes('/') ? 'repo' : 'user';
-
     const endpoint = actualType === 'user'
       ? 'http://localhost:5000/api/search/repositories'
       : 'http://localhost:5000/api/repository/details';
@@ -84,8 +86,8 @@ function App() {
       const data = await response.json();
 
       if (response.ok) {
+        setActivities([]); // Čistimo prethodni feed pri novoj pretrazi
         if (actualType === 'user') {
-          // --- USE CASE 2.1.2: KORISNIK PRONAĐEN ---
           setGithubData({
             isRepo: false,
             repoName: data.login,
@@ -93,10 +95,10 @@ function App() {
             repos: data.public_repos || 0,
             followers: data.followers || 0,
             gists: data.following || 0,
-            reposList: data.repos_list || [] // Lista repozitorijuma za output
+            reposList: data.repos_list || [],
+            owner: data.login
           });
         } else {
-          // --- ANALIZA REPOZITORIJUMA ---
           const details = data.repo_data || data;
           setGithubData({
             isRepo: true,
@@ -105,17 +107,79 @@ function App() {
             language: details.language || "N/A",
             stars: details.stargazers_count || 0,
             issues: details.open_issues_count || 0,
-            repos: details.forks_count || 0
+            repos: details.forks_count || 0,
+            owner: details.owner?.login || ""
           });
+          // Ako je direktna pretraga repoa, odmah učitaj i feed
+          loadActivityFeed(details.owner?.login || "", details.name || details.full_name);
         }
         setHasSearched(true);
       } else {
-        // Alternativni scenario: "Korisnik ne postoji"
         alert(data.error || "Nije pronađeno");
       }
     } catch (error) {
       console.error("Greška pri povezivanju:", error);
       alert("Proveri Flask server!");
+    }
+  };
+
+  const loadActivityFeed = async (owner, repo) => {
+    try {
+      // 1. Učitavamo detalje repoa da ažuriramo gornji prikaz
+      const repoResponse = await fetch('http://localhost:5000/api/repository/details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: `${owner}/${repo}`, user_id: currentUserId })
+      });
+
+      const repoData = await repoResponse.json();
+
+      if (repoResponse.ok) {
+        const details = repoData.repo_data || repoData;
+        setGithubData({
+          isRepo: true,
+          repoName: details.name || details.full_name,
+          avatar: details.owner?.avatar_url || details.avatar_url,
+          language: details.language || "N/A",
+          stars: details.stargazers_count || 0,
+          issues: details.open_issues_count || 0,
+          repos: details.forks_count || 0,
+          owner: owner
+        });
+      }
+
+      // 2. Učitavamo hronološku listu aktivnosti
+      const activityResponse = await fetch('http://localhost:5000/api/activity/list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ owner, repo })
+      });
+
+      const activityData = await activityResponse.json();
+      if (activityResponse.ok) {
+        setActivities(activityData);
+      }
+    } catch (error) {
+      console.error("Greška pri učitavanju feed-a:", error);
+    }
+  };
+
+  const handleActivityClick = async (owner, repo, sha) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/activity/details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ owner, repo, sha })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setSelectedActivity(data);
+        setShowModal(true);
+      } else {
+        alert("Detalji nisu dostupni");
+      }
+    } catch (error) {
+      alert("Greška pri učitavanju detalja aktivnosti");
     }
   };
 
@@ -125,12 +189,11 @@ function App() {
 
   return (
     <div className="App" style={{ backgroundColor: '#1e2645', minHeight: '100vh', color: '#f5e6d3', fontFamily: '"Georgia", serif' }}>
-
       <Navbar
         isInApp={isInApp}
         setIsInApp={setIsInApp}
         userRole={userRole}
-        handleLogout={handleLogout} // Dodajemo ovo ako ti Navbar ima Logout opciju
+        handleLogout={handleLogout}
         setView={(target) => navigate(target === "auth" ? "/auth" : "/")}
       />
 
@@ -156,7 +219,6 @@ function App() {
 
           <Route path="/" element={
             <div style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-
               {!isInApp && !hasSearched && <Header />}
 
               {isInApp && userRole === 'Admin' && (
@@ -174,14 +236,31 @@ function App() {
 
               <SearchBox username={username} setUsername={setUsername} handleSearch={handleSearch} />
 
-              {hasSearched ? (
-                <UserResults githubData={githubData} />
-              ) : (
+              {hasSearched && (
+                <>
+                  <UserResults
+                    githubData={githubData}
+                    onActivityClick={(owner, repo) => loadActivityFeed(owner, repo)}
+                  />
+                  <ActivityFeed
+                    activities={activities}
+                    onSelectDetail={handleActivityClick}
+                  />
+                </>
+              )}
+
+              {!hasSearched && (
                 <p style={{ opacity: 0.5, fontStyle: 'italic', marginTop: '20px' }}>
                   {isInApp ? `Welcome, ${loggedInName}!` : "Enter a GitHub username or repo."}
                 </p>
               )}
 
+              {showModal && (
+                <ActivityDetails
+                  details={selectedActivity}
+                  onClose={() => setShowModal(false)}
+                />
+              )}
             </div>
           } />
         </Routes>

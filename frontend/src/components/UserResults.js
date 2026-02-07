@@ -1,13 +1,13 @@
 import React from 'react';
 import InfoCard from '../InfoCard';
 
-const UserResults = ({ githubData }) => {
-  const { isRepo, avatar, repos, followers, gists, repoName, language, stars, reposList } = githubData;
+const UserResults = ({ githubData, onActivityClick }) => {
+  const { isRepo, avatar, repos, followers, gists, repoName, language, stars, reposList, owner } = githubData;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '30px' }}>
 
-      {/* GORNJI DEO: Avatar i Ime */}
+      {/* PROFILNI DEO - Dinamički menja naslov zavisno od toga da li je User ili Repo */}
       <div style={{ textAlign: 'center' }}>
         <img
           src={avatar}
@@ -23,9 +23,10 @@ const UserResults = ({ githubData }) => {
         <h3 style={{ color: '#89cff0', marginTop: '15px', textTransform: 'uppercase', letterSpacing: '2px' }}>
           {repoName}
         </h3>
+        {isRepo && <p style={{ color: '#f5e6d3', opacity: 0.7, fontSize: '14px' }}>Repository Overview</p>}
       </div>
 
-      {/* KARTICE SA PODACIMA */}
+      {/* STATISTIKA - InfoCard-ovi sa tvojim stilom */}
       <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', width: '100%', gap: '15px' }}>
         <InfoCard
           title={isRepo ? "Stars" : "Repositories"}
@@ -47,34 +48,40 @@ const UserResults = ({ githubData }) => {
         />
       </div>
 
-      {/* --- NOVI DEO: LISTA REPOZITORIJUMA (Samo za korisnika) --- */}
+      {/* LISTA REPOZITORIJUMA - Prikazuje se samo ako smo u "User" modu */}
       {!isRepo && reposList && reposList.length > 0 && (
         <div style={{ width: '100%', maxWidth: '800px', marginTop: '20px' }}>
           <h3 style={{ color: '#89cff0', borderBottom: '2px solid #89cff0', paddingBottom: '10px', marginBottom: '20px' }}>
-            User Repositories
+            User Repositories <span style={{fontSize: '12px', opacity: 0.6}}>(Click to view Feed)</span>
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
             {reposList.map((repo) => (
               <div
                 key={repo.id}
+                // Pozivamo loadActivityFeed iz App.js
+                onClick={() => onActivityClick(owner, repo.name)}
                 style={{
                   backgroundColor: 'rgba(245, 230, 211, 0.05)',
                   padding: '15px',
                   borderRadius: '10px',
                   border: '1px solid rgba(137, 207, 240, 0.3)',
-                  textAlign: 'left'
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  transition: '0.3s'
                 }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(137, 207, 240, 0.1)'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'rgba(245, 230, 211, 0.05)'}
               >
                 <div style={{ fontWeight: 'bold', color: '#89cff0', marginBottom: '5px' }}>
                   {repo.name}
                 </div>
-                <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '10px' }}>
+                <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '10px', height: '40px', overflow: 'hidden' }}>
                   {repo.description || "No description provided."}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#89cff0' }}>
                   <span>⭐ {repo.stargazers_count}</span>
                   <span>🍴 {repo.forks_count}</span>
-                  <span>{repo.language || "Plain Text"}</span>
+                  <span>{repo.language || "N/A"}</span>
                 </div>
               </div>
             ))}

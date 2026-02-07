@@ -30,3 +30,4 @@ class ActivityService:
     @staticmethod
     def get_activities_by_repo(repo_id):
         return Activity.query.filter_by(repo_id=repo_id).order_by(Activity.timestamp.desc()).all()
+

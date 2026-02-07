@@ -12,12 +12,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
   backend:
-    build: ./backend  # Ovo mora da pokazuje na folder gde je Dockerfile
+    build: ./backend
     container_name: github_dashboard_backend
+    env_file: ./backend/.env  # <--- OVA LINIJA JE KLJUČNA!
     ports:
       - "5000:5000"
     volumes:
-      - ./backend:/app # Ovo sinhronizuje kod sa kontejnerom
+      - ./backend:/app
     depends_on:
       - db
   frontend:
