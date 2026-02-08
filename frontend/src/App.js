@@ -15,6 +15,7 @@ import SearchHistory from './components/SearchHistory';
 import Home from './views/Home';
 import RepoView from './views/RepoView';
 import UserView from './views/UserView';
+import ContributorsView from './views/ContributorsView'; // 1. IMPORT KOMPONENTE
 
 function App() {
   const navigate = useNavigate();
@@ -26,8 +27,6 @@ function App() {
 
   // Proveravamo da li smo na Login/Reg stranici da sakrijemo brending
   const isAuthPage = location.pathname === '/auth';
-  // Proveravamo da li smo na Home stranici
-  const isHomePage = location.pathname === '/';
 
   const handleLoginSuccess = (role, name, id) => {
     setCurrentUserId(id);
@@ -72,11 +71,14 @@ function App() {
             </div>
           } />
 
-          {/* HOME VIEW - Sada sadrži samo pozdravnu poruku jer su Header i Search gore */}
+          {/* HOME VIEW */}
           <Route path="/" element={<Home isInApp={isInApp} />} />
 
           {/* REPO DASHBOARD */}
           <Route path="/repo/:owner/:repo" element={<RepoView currentUserId={currentUserId} />} />
+
+          {/* CONTRIBUTORS VIEW - 2. DEFINISANA RUTA SA PARAMETRIMA */}
+          <Route path="/repo/:owner/:repo/contributors" element={<ContributorsView />} />
 
           {/* USER PROFILE */}
           <Route path="/user/:username" element={<UserView currentUserId={currentUserId} />} />

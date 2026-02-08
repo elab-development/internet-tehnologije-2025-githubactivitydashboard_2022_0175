@@ -11,7 +11,7 @@ const RepoView = ({ currentUserId }) => {
   // --- STATE ---
   const [githubData, setGithubData] = useState(null);
   const [activities, setActivities] = useState([]);
-  const [topContributors, setTopContributors] = useState([]); // NOVO
+  const [topContributors, setTopContributors] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // State za UI
@@ -22,7 +22,7 @@ const RepoView = ({ currentUserId }) => {
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  // 1. RESET FILTERA NA PROMENU RUTE
+  // 1. RESET FILTERA NA PROMENU RUTE (Kada pređeš na drugi repo)
   useEffect(() => {
     setFilterType("All");
     setAuthorFilter("");
@@ -30,7 +30,7 @@ const RepoView = ({ currentUserId }) => {
     setVisibleCount(10);
   }, [owner, repo]);
 
-  // 2. FETCH TOP CONTRIBUTORS (NOVO)
+  // 2. FETCH TOP CONTRIBUTORS
   useEffect(() => {
     const fetchTopContributors = async () => {
       try {
@@ -46,12 +46,12 @@ const RepoView = ({ currentUserId }) => {
     if (owner && repo) fetchTopContributors();
   }, [owner, repo]);
 
-  // 3. GLAVNI FETCH PODATAKA
+  // 3. GLAVNI FETCH PODATAKA (Optimizovano: Ne zavisi više od authorFilter)
   useEffect(() => {
     const loadRepoDashboard = async () => {
       if (!owner || !repo) return;
 
-      setLoading(true);
+      setLoading(true); // Loading se pali samo kad se menja repo ili tip događaja (All/Push/itd)
       try {
         const res = await fetch('http://localhost:5000/api/repository/details', {
           method: 'POST',
@@ -71,14 +71,15 @@ const RepoView = ({ currentUserId }) => {
           owner: owner
         });
 
+        // Povlačimo listu aktivnosti
         const actRes = await fetch('http://localhost:5000/api/activity/list', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             owner,
             repo,
-            filter: filterType,
-            author_filter: authorFilter
+            filter: filterType
+            // UKLONJEN author_filter odavde da backend ne bi seckao pri kucanju
           })
         });
         const actData = await actRes.json();
@@ -94,24 +95,31 @@ const RepoView = ({ currentUserId }) => {
     };
 
     loadRepoDashboard();
-  }, [owner, repo, filterType, authorFilter, currentUserId]);
-const activitiesToShow = useMemo(() => {
-  // 1. Filtriranje po autoru na frontu (radi na svako slovo instant)
-  let result = activities.filter(act => {
-    if (!authorFilter) return true;
-    const search = authorFilter.toLowerCase().trim().replace('@', '');
-    return act.author?.toLowerCase().includes(search);
-  });
+  }, [owner, repo, filterType, currentUserId]); // authorFilter je izbačen iz zavisnosti!
 
-  // 2. Sortiranje
-  result.sort((a, b) => {
-    const dateA = new Date(a.timestamp || a.date || 0).getTime();
-    const dateB = new Date(b.timestamp || b.date || 0).getTime();
-    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-  });
+  // 4. LOGIKA FILTRIRANJA (Client-side: Radi instant na svako slovo)
+  const activitiesToShow = useMemo(() => {
+    if (!activities) return [];
 
-  return result.slice(0, visibleCount);
-}, [activities, authorFilter, sortOrder, visibleCount]);
+    // Filtriranje po imenu autora
+    let result = activities.filter(act => {
+      if (!authorFilter) return true;
+
+      // Proveravamo polja actor_username ili author (zavisi šta backend šalje)
+      const name = (act.actor_username || act.author || "").toLowerCase();
+      const search = authorFilter.toLowerCase().trim().replace('@', '');
+      return name.includes(search);
+    });
+
+    // Sortiranje po datumu
+    result.sort((a, b) => {
+      const dateA = new Date(a.timestamp || a.date || 0).getTime();
+      const dateB = new Date(b.timestamp || b.date || 0).getTime();
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+
+    return result.slice(0, visibleCount);
+  }, [activities, authorFilter, sortOrder, visibleCount]);
 
   const handleActivityClick = async (owner, repo, sha) => {
     try {
@@ -135,10 +143,9 @@ const activitiesToShow = useMemo(() => {
   return (
     <div style={{ width: '100%', maxWidth: '900px', animation: 'fadeIn 0.5s' }}>
 
-      {/* Kartica sa informacijama o repou */}
       <UserResults githubData={githubData} />
 
-      {/* NOVO: Top Contributors Section */}
+      {/* Top Contributors Section */}
       {topContributors.length > 0 && (
         <div style={contributorSectionStyle}>
           <h3 style={{ color: '#89cff0', marginBottom: '15px', fontSize: '1.1rem', textAlign: 'left' }}>
@@ -149,7 +156,7 @@ const activitiesToShow = useMemo(() => {
               <div key={c.login} style={contributorCardStyle}>
                 <img src={c.avatar_url} alt={c.login} style={avatarStyle} />
                 <div style={{ fontWeight: 'bold', color: '#f5e6d3', fontSize: '0.9rem' }}>{c.login}</div>
-                <div style={{ fontSize: '0.8rem', color: '#89cff0' }}>{c.contributions} commits</div>
+                <div style={{ fontSize: '0.8rem', color: '#89cff0' }}>{c.count || c.contributions} commits</div>
               </div>
             ))}
 
@@ -165,14 +172,7 @@ const activitiesToShow = useMemo(() => {
       )}
 
       <div style={{ marginTop: '40px' }}>
-        {/* Toolbar za filtere */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '15px',
-          marginBottom: '20px',
-          flexWrap: 'wrap'
-        }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginBottom: '20px', flexWrap: 'wrap' }}>
            <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} style={selectStyle}>
               <option value="desc">Newest First</option>
               <option value="asc">Oldest First</option>
@@ -194,32 +194,18 @@ const activitiesToShow = useMemo(() => {
            </select>
         </div>
 
-        {/* Glavni prikaz: Feed ili Poruka za prazne rezultate */}
         {activitiesToShow.length > 0 ? (
           <>
             <ActivityFeed activities={activitiesToShow} onSelectDetail={handleActivityClick} />
-
             {activities.length > visibleCount && (
-              <button
-                onClick={() => setVisibleCount(v => v + 10)}
-                style={loadMoreStyle}
-              >
+              <button onClick={() => setVisibleCount(v => v + 10)} style={loadMoreStyle}>
                 LOAD MORE ↓
               </button>
             )}
           </>
         ) : (
-          <div style={{
-            padding: '40px',
-            textAlign: 'center',
-            backgroundColor: 'rgba(137, 207, 240, 0.05)',
-            borderRadius: '15px',
-            border: '1px dashed rgba(137, 207, 240, 0.3)',
-            marginTop: '20px'
-          }}>
-            <p style={{ color: '#89cff0', fontSize: '16px' }}>
-              No activities found for the current filters.
-            </p>
+          <div style={emptyStateStyle}>
+            <p style={{ color: '#89cff0', fontSize: '16px' }}>No activities found for "{authorFilter}".</p>
             <button
               onClick={() => { setFilterType("All"); setAuthorFilter(""); }}
               style={{ background: 'none', border: 'none', color: '#f5e6d3', textDecoration: 'underline', cursor: 'pointer', marginTop: '10px' }}
@@ -230,7 +216,6 @@ const activitiesToShow = useMemo(() => {
         )}
       </div>
 
-      {/* Modal */}
       {showModal && (
         <ActivityDetails
           details={selectedActivity}
@@ -242,67 +227,13 @@ const activitiesToShow = useMemo(() => {
 };
 
 // --- STILOVI ---
-const contributorSectionStyle = {
-  marginTop: '30px',
-  padding: '20px',
-  backgroundColor: 'rgba(137, 207, 240, 0.05)',
-  borderRadius: '15px',
-  border: '1px solid rgba(137, 207, 240, 0.1)'
-};
-
-const contributorGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-  gap: '12px'
-};
-
-const contributorCardStyle = {
-  backgroundColor: 'rgba(30, 38, 69, 0.8)',
-  padding: '12px',
-  borderRadius: '12px',
-  textAlign: 'center',
-  transition: 'transform 0.2s',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center'
-};
-
-const avatarStyle = {
-  width: '45px',
-  height: '45px',
-  borderRadius: '50%',
-  marginBottom: '8px',
-  border: '2px solid #89cff0'
-};
-
-const selectStyle = {
-  backgroundColor: '#f5e6d3',
-  color: '#1e2645',
-  padding: '8px 15px',
-  borderRadius: '5px',
-  fontWeight: 'bold',
-  border: 'none',
-  cursor: 'pointer',
-  outline: 'none'
-};
-
-const inputStyle = {
-  ...selectStyle,
-  width: '140px'
-};
-
-const loadMoreStyle = {
-  display: 'block',
-  margin: '30px auto',
-  backgroundColor: 'transparent',
-  color: '#89cff0',
-  border: '2px solid #89cff0',
-  padding: '10px 25px',
-  cursor: 'pointer',
-  borderRadius: '5px',
-  fontWeight: 'bold',
-  transition: '0.3s'
-};
+const contributorSectionStyle = { marginTop: '30px', padding: '20px', backgroundColor: 'rgba(137, 207, 240, 0.05)', borderRadius: '15px', border: '1px solid rgba(137, 207, 240, 0.1)' };
+const contributorGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' };
+const contributorCardStyle = { backgroundColor: 'rgba(30, 38, 69, 0.8)', padding: '12px', borderRadius: '12px', textAlign: 'center', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
+const avatarStyle = { width: '45px', height: '45px', borderRadius: '50%', marginBottom: '8px', border: '2px solid #89cff0' };
+const selectStyle = { backgroundColor: '#f5e6d3', color: '#1e2645', padding: '8px 15px', borderRadius: '5px', fontWeight: 'bold', border: 'none', cursor: 'pointer', outline: 'none' };
+const inputStyle = { ...selectStyle, width: '140px' };
+const loadMoreStyle = { display: 'block', margin: '30px auto', backgroundColor: 'transparent', color: '#89cff0', border: '2px solid #89cff0', padding: '10px 25px', cursor: 'pointer', borderRadius: '5px', fontWeight: 'bold', transition: '0.3s' };
+const emptyStateStyle = { padding: '40px', textAlign: 'center', backgroundColor: 'rgba(137, 207, 240, 0.05)', borderRadius: '15px', border: '1px dashed rgba(137, 207, 240, 0.3)', marginTop: '20px' };
 
 export default RepoView;
