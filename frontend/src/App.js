@@ -36,19 +36,35 @@ function App() {
     location.pathname.startsWith('/user/');
 
   const handleLoginSuccess = (role, name, id) => {
+    // Prvo sačuvamo u browseru da se ne izbriše na refresh
+    const userData = { role, name, id };
+    localStorage.setItem('userSession', JSON.stringify(userData));
+
+    // Zatim setujemo state kao i do sada
     setCurrentUserId(id);
     setUserRole(role);
     setIsInApp(true);
     navigate("/");
   };
 
-  const handleLogout = () => {
-    setIsInApp(false);
-    setCurrentUserId(null);
-    setUserRole(null);
-    navigate("/");
-  };
 
+  React.useEffect(() => {
+    const savedUser = localStorage.getItem('userSession');
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      setCurrentUserId(user.id);
+      setUserRole(user.role);
+      setIsInApp(true);
+      // Ovde ne radimo navigate("/") da ne bismo prekinuli korisnika ako je bio na nekom repo-u
+    }
+  }, []);
+const handleLogout = () => {
+  localStorage.removeItem('userSession'); // Obavezno dodaj ovo!
+  setIsInApp(false);
+  setCurrentUserId(null);
+  setUserRole(null);
+  navigate("/");
+};
   return (
     <div className="App" style={{ backgroundColor: '#1e2645', minHeight: '100vh', color: '#f5e6d3', fontFamily: '"Georgia", serif' }}>
 

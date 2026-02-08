@@ -63,16 +63,17 @@ def follow_repo():
 
 @watchlist_bp.route('/api/watchlist/unfollow', methods=['DELETE'])
 def unfollow_repo():
-    """Uklanja repozitorijum iz liste praćenih."""
     user_id = request.args.get('user_id')
-    repo_id = request.args.get('repo_id')
+    # Menjamo naziv varijable radi jasnoće, prihvatamo i ID i puno ime
+    identifier = request.args.get('repo_id')
 
-    if not user_id or not repo_id:
-        return jsonify({"error": "user_id and repo_id are required"}), 400
+    if not user_id or not identifier:
+        return jsonify({"error": "user_id and repo_id (or name) are required"}), 400
 
-    success = RepositoryService.unfollow_repository(user_id, repo_id)
+    # Šaljemo identifier servisu
+    success = RepositoryService.unfollow_repository(user_id, identifier)
 
     if success:
-        return jsonify({"message": "Successfully removed from following list"}), 200
+        return jsonify({"message": "Successfully removed"}), 200
     else:
-        return jsonify({"error": "Repository not found in your following list"}), 404
+        return jsonify({"error": "Not found in following list"}), 404

@@ -5,6 +5,9 @@ import InfoCard from '../InfoCard';
 const UserResults = ({ githubData }) => {
   const navigate = useNavigate();
 
+  // Ako githubData nekim čudom ne stigne, da ne pukne cela stranica
+  if (!githubData) return null;
+
   const {
     isRepo,
     avatar,
@@ -13,7 +16,7 @@ const UserResults = ({ githubData }) => {
     repoName,
     language,
     stars,
-    issues, // Vratili smo issues ovde
+    issues,
     reposList,
     owner
   } = githubData;
@@ -29,7 +32,8 @@ const UserResults = ({ githubData }) => {
             width: '120px',
             height: '120px',
             borderRadius: isRepo ? '20px' : '50%',
-            border: '4px solid #89cff0'
+            border: '4px solid #89cff0',
+            objectFit: 'cover'
           }}
         />
         <h3 style={{ color: '#89cff0', marginTop: '15px', textTransform: 'uppercase' }}>
@@ -49,7 +53,6 @@ const UserResults = ({ githubData }) => {
           icon={isRepo ? "💻" : "👥"}
         />
 
-        {/* OVA KARTICA SE SADA POJAVLJUJE SAMO AKO JE U PITANJU REPO */}
         {isRepo && (
           <InfoCard
             title="Issues"
@@ -70,24 +73,33 @@ const UserResults = ({ githubData }) => {
             gap: '15px',
             marginTop: '20px'
           }}>
-            {reposList.map((repo) => (
-              <div
-                key={repo.id}
-                onClick={() => navigate(`/repo/${owner}/${repo.name}`)}
-                style={{
-                  backgroundColor: 'rgba(245, 230, 211, 0.05)',
-                  padding: '15px',
-                  borderRadius: '10px',
-                  border: '1px solid rgba(137, 207, 240, 0.3)',
-                  cursor: 'pointer'
-                }}
-              >
-                <div style={{ fontWeight: 'bold', color: '#89cff0' }}>{repo.name}</div>
-                <div style={{ fontSize: '11px', marginTop: '10px' }}>
-                  ⭐ {repo.stargazers_count} | {repo.language}
+            {reposList.map((repo) => {
+              // FILTER: GitHub nekad vrati owner kao objekat, a nekad kao string.
+              // Ovde osiguravamo da uvek imamo ispravan username za URL.
+              const repoOwner = repo.owner?.login || owner;
+
+              return (
+                <div
+                  key={repo.id}
+                  onClick={() => navigate(`/repo/${repoOwner}/${repo.name}`)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(137, 207, 240, 0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(245, 230, 211, 0.05)'}
+                  style={{
+                    backgroundColor: 'rgba(245, 230, 211, 0.05)',
+                    padding: '15px',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(137, 207, 240, 0.3)',
+                    cursor: 'pointer',
+                    transition: '0.3s ease'
+                  }}
+                >
+                  <div style={{ fontWeight: 'bold', color: '#89cff0' }}>{repo.name}</div>
+                  <div style={{ fontSize: '11px', marginTop: '10px', color: '#f5e6d3' }}>
+                    ⭐ {repo.stargazers_count} | {repo.language || 'N/A'}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

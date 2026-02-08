@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link} from 'react-router-dom';
 import UserResults from '../components/UserResults';
 import ActivityFeed from '../components/ActivityFeed';
 import ActivityDetails from '../components/ActivityDetails';
@@ -21,6 +21,7 @@ const RepoView = ({ currentUserId }) => {
   const [visibleCount, setVisibleCount] = useState(10);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
 
   // 1. RESET FILTERA NA PROMENU RUTE
   useEffect(() => {
@@ -46,14 +47,36 @@ const RepoView = ({ currentUserId }) => {
     if (owner && repo) fetchTopContributors();
   }, [owner, repo]);
 
-  // 3. GLAVNI FETCH PODATAKA (Povlačimo SVE aktivnosti jednom)
+  // 3. PROVERA DA LI VEĆ PRATIMO OVAJ REPO (Izdvojeno u poseban Effect)
+  useEffect(() => {
+    const checkFollowing = async () => {
+      if (!currentUserId || !repo) return;
+      try {
+        const res = await fetch(`http://localhost:5000/api/following?user_id=${currentUserId}`);
+        const data = await res.json();
+        if (res.ok) {
+          // Proveravamo da li se trenutni repo (owner/repo) nalazi u listi
+          // Izmeni ovaj deo unutar tvog 3. Effect-a:
+          const alreadyFollowed = data.some(r =>
+            r.full_name.toLowerCase() === `${owner}/${repo}`.toLowerCase()
+          );
+          setIsFollowing(alreadyFollowed);
+        }
+      } catch (e) {
+        console.error("Check following error:", e);
+      }
+    };
+    checkFollowing();
+  }, [owner, repo, currentUserId]);
+
+  // 4. GLAVNI FETCH PODATAKA (Repo details + Activities)
   useEffect(() => {
     const loadRepoDashboard = async () => {
       if (!owner || !repo) return;
 
       setLoading(true);
       try {
-        // Detalji o repozitorijumu
+        // A) Detalji o repozitorijumu
         const res = await fetch('http://localhost:5000/api/repository/details', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -69,17 +92,18 @@ const RepoView = ({ currentUserId }) => {
           language: details.language || "N/A",
           stars: details.stargazers_count || 0,
           issues: details.open_issues_count || 0,
-          owner: owner
+          owner: owner,
+          id: details.id // Čuvamo pravi ID ako zatreba za bazu
         });
 
-        // POVLAČIMO SVE (Filter: All) - Backend će nam vratiti listu koju ćemo posle sami filtrirati
+        // B) Povlačimo SVE aktivnosti
         const actRes = await fetch('http://localhost:5000/api/activity/list', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             owner,
             repo,
-            filter: "All" // Uvek vučemo sve da bi filtriranje na frontu radilo
+            filter: "All"
           })
         });
         const actData = await actRes.json();
@@ -95,25 +119,20 @@ const RepoView = ({ currentUserId }) => {
     };
 
     loadRepoDashboard();
-  }, [owner, repo, currentUserId]); // filterType je izbačen iz zavisnosti!
+  }, [owner, repo, currentUserId]);
 
-  // 4. LOGIKA FILTRIRANJA (Client-side: I za Usera I za Event Type)
+  // --- LOGIKA FILTRIRANJA ---
   const activitiesToShow = useMemo(() => {
     if (!activities) return [];
 
     let result = activities.filter(act => {
-      // A) Filtriranje po tipu eventa (Push, Watch, Create...)
       const typeMatches = filterType === "All" || act.type === filterType;
-
-      // B) Filtriranje po imenu autora
       const name = (act.actor_username || act.author || "").toLowerCase();
       const search = authorFilter.toLowerCase().trim().replace('@', '');
       const userMatches = !authorFilter || name.includes(search);
-
       return typeMatches && userMatches;
     });
 
-    // C) Sortiranje
     result.sort((a, b) => {
       const dateA = new Date(a.timestamp || a.date || 0).getTime();
       const dateB = new Date(b.timestamp || b.date || 0).getTime();
@@ -122,6 +141,8 @@ const RepoView = ({ currentUserId }) => {
 
     return result.slice(0, visibleCount);
   }, [activities, filterType, authorFilter, sortOrder, visibleCount]);
+
+  // --- HANDLERS ---
 
   const handleActivityClick = async (owner, repo, sha) => {
     try {
@@ -136,6 +157,46 @@ const RepoView = ({ currentUserId }) => {
     }
   };
 
+ const handleFollow = async () => {
+     // 1. Sigurnosna provera za User ID
+     if (!currentUserId) {
+         alert("Morate biti prijavljeni da biste zapratili repozitorijum.");
+         return;
+     }
+
+     try {
+         // 2. Čak i ako githubData još nije učitan, owner i repo iz URL-a jesu!
+         const repoFullName = `${owner}/${repo}`;
+
+         const response = await fetch(`http://localhost:5000/api/watchlist/follow`, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({
+                 user_id: currentUserId,
+                 repo_data: {
+                     // Ako nemamo ID iz githubData, šaljemo puno ime kao fallback
+                     repo_id: githubData?.id || repoFullName,
+                     full_name: repoFullName,
+                     html_url: `https://github.com/${repoFullName}`
+                 }
+             })
+         });
+
+         if (response.ok) {
+             setIsFollowing(true);
+             alert("★ Uspešno zapraćeno!");
+             // Ne radimo reload ovde da ne kvarimo user experience
+         } else {
+             const errorData = await response.json();
+             alert("Greška: " + (errorData.error || "Neuspešno zapraćivanje"));
+         }
+     } catch (error) {
+         console.error("Greška pri čuvanju:", error);
+         alert("Server nije dostupan.");
+     }
+ };
+
+
   if (loading) return (
     <div style={{ color: '#89cff0', padding: '50px', textAlign: 'center', fontSize: '18px' }}>
       Loading dashboard for {owner}/{repo}...
@@ -146,6 +207,29 @@ const RepoView = ({ currentUserId }) => {
     <div style={{ width: '100%', maxWidth: '900px', animation: 'fadeIn 0.5s' }}>
 
       <UserResults githubData={githubData} />
+
+      {/* BUTTON ZA FOLLOW / UNFOLLOW */}
+      {currentUserId && (
+        <div style={{ textAlign: 'right', marginTop: '-10px', marginBottom: '20px' }}>
+          {isFollowing ? (
+            /* Ako prati, ispiši poruku i link ka listi gde može da otprati */
+            <div style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '14px' }}>
+              ★ You are following this repo.
+              <Link to="/following" style={{ marginLeft: '10px', color: '#89cff0', textDecoration: 'underline' }}>
+                Manage in Following list
+              </Link>
+            </div>
+          ) : (
+            /* Ako NE prati, prikaži Follow dugme */
+            <button
+              onClick={handleFollow}
+              style={followButtonStyle}
+            >
+              ☆ Follow
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Top Contributors Section */}
       {topContributors.length > 0 && (
@@ -173,6 +257,7 @@ const RepoView = ({ currentUserId }) => {
         </div>
       )}
 
+      {/* FILTERI I FEED */}
       <div style={{ marginTop: '40px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginBottom: '20px', flexWrap: 'wrap' }}>
            <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} style={selectStyle}>
@@ -228,7 +313,8 @@ const RepoView = ({ currentUserId }) => {
   );
 };
 
-// ... (stils ostaje isti)
+// --- STILOVI ---
+
 const contributorSectionStyle = { marginTop: '30px', padding: '20px', backgroundColor: 'rgba(137, 207, 240, 0.05)', borderRadius: '15px', border: '1px solid rgba(137, 207, 240, 0.1)' };
 const contributorGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' };
 const contributorCardStyle = { backgroundColor: 'rgba(30, 38, 69, 0.8)', padding: '12px', borderRadius: '12px', textAlign: 'center', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
@@ -237,5 +323,28 @@ const selectStyle = { backgroundColor: '#f5e6d3', color: '#1e2645', padding: '8p
 const inputStyle = { ...selectStyle, width: '140px' };
 const loadMoreStyle = { display: 'block', margin: '30px auto', backgroundColor: 'transparent', color: '#89cff0', border: '2px solid #89cff0', padding: '10px 25px', cursor: 'pointer', borderRadius: '5px', fontWeight: 'bold', transition: '0.3s' };
 const emptyStateStyle = { padding: '40px', textAlign: 'center', backgroundColor: 'rgba(137, 207, 240, 0.05)', borderRadius: '15px', border: '1px dashed rgba(137, 207, 240, 0.3)', marginTop: '20px' };
+const followingBadgeStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  backgroundColor: 'rgba(255, 215, 0, 0.15)',
+  color: '#ffd700',
+  padding: '6px 15px',
+  borderRadius: '20px',
+  fontSize: '13px',
+  fontWeight: 'bold',
+  border: '1px solid rgba(255, 215, 0, 0.3)',
+  animation: 'fadeIn 0.5s ease'
+};
+const followButtonStyle = {
+  backgroundColor: '#ffd700', // Zlatna boja
+  color: '#1e2645',
+  border: 'none',
+  padding: '8px 18px',
+  borderRadius: '5px',
+  cursor: 'pointer',
+  fontWeight: 'bold',
+  boxShadow: '3px 3px 0px #89cff0',
+  transition: '0.2s'
+};
 
 export default RepoView;

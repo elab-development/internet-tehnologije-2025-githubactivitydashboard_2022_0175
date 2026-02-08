@@ -1,98 +1,100 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom'; // BITNO: Za navigaciju unutar tvoje aplikacije
 
 const FollowingList = ({ userId }) => {
     const [repos, setRepos] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // useCallback sprečava nepotrebno ponovno kreiranje funkcije
-    const fetchFollowing = useCallback(async () => {
-        if (!userId) return;
-        setLoading(true);
-        try {
-            // Gađamo tačnu rutu za ZAPRATLJENE repozitorijume
-            const response = await fetch(`http://localhost:5000/api/following?user_id=${userId}`);
-            const data = await response.json();
-
-            if (response.ok) {
-                setRepos(data);
-            } else {
-                console.error("Greška sa servera:", data.error);
-            }
-        } catch (error) {
-            console.error("Greška pri povezivanju:", error);
-        } finally {
-            setLoading(false);
-        }
-    }, [userId]);
-
     useEffect(() => {
-        fetchFollowing();
-    }, [fetchFollowing]);
+        const fetchFollowing = async () => {
+            if (!userId) return;
 
-    const handleUnfollow = async (repoId) => {
-        if (window.confirm("Do you want to unfollow this repository?")) {
+            setLoading(true);
             try {
-                // Pozivamo DELETE rutu na backendu
-                const response = await fetch(`http://localhost:5000/api/watchlist/unfollow?user_id=${userId}&repo_id=${repoId}`, {
-                    method: 'DELETE'
-                });
+                // Proveri da li ti je backend ruta tačna
+                const response = await fetch(`http://localhost:5000/api/following?user_id=${userId}`);
 
                 if (response.ok) {
-                    // UI update: filtriramo listu bez ponovnog pozivanja API-ja
-                    setRepos(prevRepos => prevRepos.filter(r => r.repo_id !== repoId));
+                    const data = await response.json();
+                    setRepos(data);
+                } else {
+                    console.error("Nismo uspeli da učitamo listu.");
                 }
             } catch (error) {
-                console.error("Unfollow error:", error);
+                console.error("Greška mreže:", error);
+            } finally {
+                setLoading(false);
             }
+        };
+
+        fetchFollowing();
+    }, [userId]);
+
+    const handleUnfollow = async (repoId) => {
+        const confirmDelete = window.confirm("Da li sigurno želiš da prestaneš da pratiš ovaj repo?");
+        if (!confirmDelete) return;
+
+        try {
+            // Pretpostavljam da backend briše preko user_id i repo_id
+            const response = await fetch(`http://localhost:5000/api/watchlist/unfollow?user_id=${userId}&repo_id=${repoId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                // UI TRIK: Odmah ga izbaci iz liste da ne moraš da radiš refresh
+                setRepos(prevRepos => prevRepos.filter(repo => repo.repo_id !== repoId));
+            } else {
+                alert("Došlo je do greške pri brisanju.");
+            }
+        } catch (error) {
+            console.error("Greška pri brisanju:", error);
         }
     };
 
-    if (loading) return <div style={{ color: '#89cff0', textAlign: 'center', marginTop: '50px' }}>Loading your list...</div>;
+    if (loading) return <div style={loadingStyle}>Loading your favorite repos...</div>;
 
     return (
-        <div style={{ width: '100%', maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-            <h2 style={{ color: '#ffd700', textAlign: 'center', marginBottom: '30px' }}>★ MY FOLLOWING LIST</h2>
+        <div style={containerStyle}>
+            <h2 style={headerStyle}> MY FOLLOWING LIST</h2>
 
             {repos.length === 0 ? (
-                <div style={{ textAlign: 'center', opacity: 0.5, marginTop: '50px' }}>
-                    <p>You haven't followed any repositories yet.</p>
-                    <p style={{ fontSize: '12px' }}>Click FOLLOW on a repository to see it here!</p>
+                <div style={emptyStateStyle}>
+                    <p>You aren't following any repositories yet.</p>
+                    <p style={{ fontSize: '14px', color: '#89cff0' }}>
+                        Go search for some cool projects! 🚀
+                    </p>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gap: '15px' }}>
-                    {repos.map(repo => (
-                        <div key={repo.repo_id} style={{
-                            backgroundColor: 'rgba(245, 230, 211, 0.05)',
-                            border: '1px solid rgba(137, 207, 240, 0.3)',
-                            padding: '20px',
-                            borderRadius: '10px',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            boxShadow: '4px 4px 0px rgba(137, 207, 240, 0.2)'
-                        }}>
-                            <div>
-                                <h3 style={{ margin: 0, color: '#f5e6d3' }}>{repo.full_name}</h3>
-                                <a href={repo.url} target="_blank" rel="noreferrer" style={{ color: '#89cff0', fontSize: '12px', textDecoration: 'none' }}>
-                                    View on GitHub →
+                <div style={gridStyle}>
+                    {repos.map((repo) => (
+                        <div key={repo.repo_id} style={cardStyle}>
+                            <div style={{ flex: 1 }}>
+                                {/* OVO JE NOVO: Vodi na tvoju stranicu sa statistikom */}
+                                <h3 style={{ margin: '0 0 5px 0' }}>
+                                    <Link
+                                        to={`/repo/${repo.full_name}`}
+                                        style={linkStyle}
+                                    >
+                                        {repo.full_name}
+                                    </Link>
+                                </h3>
+
+                                {/* Link ka pravom GitHub-u (opciono) */}
+                                <a
+                                    href={repo.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={externalLinkStyle}
+                                >
+                                    View on GitHub ↗
                                 </a>
                             </div>
+
                             <button
                                 onClick={() => handleUnfollow(repo.repo_id)}
-                                style={{
-                                    backgroundColor: 'transparent',
-                                    color: '#ff4d4d',
-                                    border: '1px solid #ff4d4d',
-                                    padding: '8px 15px',
-                                    borderRadius: '5px',
-                                    cursor: 'pointer',
-                                    fontWeight: 'bold',
-                                    transition: '0.2s'
-                                }}
-                                onMouseOver={(e) => e.target.style.backgroundColor = 'rgba(255, 77, 77, 0.1)'}
-                                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                                style={removeButtonStyle}
                             >
-                                REMOVE
+                                UNFOLLOW
                             </button>
                         </div>
                     ))}
@@ -100,6 +102,85 @@ const FollowingList = ({ userId }) => {
             )}
         </div>
     );
+};
+
+// --- STILOVI (Da se uklopi u tvoj dizajn) ---
+
+const containerStyle = {
+    width: '100%',
+    maxWidth: '800px',
+    margin: '0 auto',
+    padding: '20px',
+    animation: 'fadeIn 0.5s'
+};
+
+const headerStyle = {
+    color: '#ffd700',
+    textAlign: 'center',
+    marginBottom: '30px',
+    borderBottom: '1px solid rgba(137, 207, 240, 0.3)',
+    paddingBottom: '10px'
+};
+
+const loadingStyle = {
+    color: '#89cff0',
+    textAlign: 'center',
+    marginTop: '50px',
+    fontSize: '1.2rem'
+};
+
+const emptyStateStyle = {
+    textAlign: 'center',
+    color: '#f5e6d3',
+    marginTop: '50px',
+    padding: '40px',
+    backgroundColor: 'rgba(137, 207, 240, 0.05)',
+    borderRadius: '15px'
+};
+
+const gridStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px'
+};
+
+const cardStyle = {
+    backgroundColor: 'rgba(30, 38, 69, 0.8)', // Tamna pozadina kartice
+    border: '1px solid rgba(137, 207, 240, 0.3)', // Plavi okvir
+    padding: '20px',
+    borderRadius: '10px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    boxShadow: '4px 4px 0px rgba(137, 207, 240, 0.1)',
+    transition: 'transform 0.2s'
+};
+
+const linkStyle = {
+    color: '#f5e6d3',
+    textDecoration: 'none',
+    fontSize: '1.2rem',
+    fontWeight: 'bold'
+};
+
+const externalLinkStyle = {
+    color: '#89cff0',
+    fontSize: '0.85rem',
+    textDecoration: 'none',
+    opacity: 0.8
+};
+
+const removeButtonStyle = {
+    backgroundColor: 'transparent',
+    color: '#ff4d4d', // Crvena boja
+    border: '1px solid #ff4d4d',
+    padding: '8px 16px',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    fontSize: '0.8rem',
+    marginLeft: '15px',
+    transition: '0.3s'
 };
 
 export default FollowingList;

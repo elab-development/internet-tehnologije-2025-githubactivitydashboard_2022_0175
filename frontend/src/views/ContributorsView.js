@@ -47,7 +47,7 @@ const ContributorsView = () => {
     datasets: [
       {
         label: 'Commits',
-        data: contributors.slice(0, 10).map(c => c.count || c.contributions || 0),
+        data: contributors.slice(0, 10).map(c => c.contributions || 0),
         backgroundColor: 'rgba(137, 207, 240, 0.6)', // Plava boja za commits
         borderColor: '#89cff0',
         borderWidth: 1,
