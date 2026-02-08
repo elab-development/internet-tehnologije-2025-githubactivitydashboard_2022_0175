@@ -22,7 +22,7 @@ const RepoView = ({ currentUserId }) => {
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  // 1. RESET FILTERA NA PROMENU RUTE (Kada pređeš na drugi repo)
+  // 1. RESET FILTERA NA PROMENU RUTE
   useEffect(() => {
     setFilterType("All");
     setAuthorFilter("");
@@ -46,13 +46,14 @@ const RepoView = ({ currentUserId }) => {
     if (owner && repo) fetchTopContributors();
   }, [owner, repo]);
 
-  // 3. GLAVNI FETCH PODATAKA (Optimizovano: Ne zavisi više od authorFilter)
+  // 3. GLAVNI FETCH PODATAKA (Povlačimo SVE aktivnosti jednom)
   useEffect(() => {
     const loadRepoDashboard = async () => {
       if (!owner || !repo) return;
 
-      setLoading(true); // Loading se pali samo kad se menja repo ili tip događaja (All/Push/itd)
+      setLoading(true);
       try {
+        // Detalji o repozitorijumu
         const res = await fetch('http://localhost:5000/api/repository/details', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -71,15 +72,14 @@ const RepoView = ({ currentUserId }) => {
           owner: owner
         });
 
-        // Povlačimo listu aktivnosti
+        // POVLAČIMO SVE (Filter: All) - Backend će nam vratiti listu koju ćemo posle sami filtrirati
         const actRes = await fetch('http://localhost:5000/api/activity/list', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             owner,
             repo,
-            filter: filterType
-            // UKLONJEN author_filter odavde da backend ne bi seckao pri kucanju
+            filter: "All" // Uvek vučemo sve da bi filtriranje na frontu radilo
           })
         });
         const actData = await actRes.json();
@@ -95,23 +95,25 @@ const RepoView = ({ currentUserId }) => {
     };
 
     loadRepoDashboard();
-  }, [owner, repo, filterType, currentUserId]); // authorFilter je izbačen iz zavisnosti!
+  }, [owner, repo, currentUserId]); // filterType je izbačen iz zavisnosti!
 
-  // 4. LOGIKA FILTRIRANJA (Client-side: Radi instant na svako slovo)
+  // 4. LOGIKA FILTRIRANJA (Client-side: I za Usera I za Event Type)
   const activitiesToShow = useMemo(() => {
     if (!activities) return [];
 
-    // Filtriranje po imenu autora
     let result = activities.filter(act => {
-      if (!authorFilter) return true;
+      // A) Filtriranje po tipu eventa (Push, Watch, Create...)
+      const typeMatches = filterType === "All" || act.type === filterType;
 
-      // Proveravamo polja actor_username ili author (zavisi šta backend šalje)
+      // B) Filtriranje po imenu autora
       const name = (act.actor_username || act.author || "").toLowerCase();
       const search = authorFilter.toLowerCase().trim().replace('@', '');
-      return name.includes(search);
+      const userMatches = !authorFilter || name.includes(search);
+
+      return typeMatches && userMatches;
     });
 
-    // Sortiranje po datumu
+    // C) Sortiranje
     result.sort((a, b) => {
       const dateA = new Date(a.timestamp || a.date || 0).getTime();
       const dateB = new Date(b.timestamp || b.date || 0).getTime();
@@ -119,7 +121,7 @@ const RepoView = ({ currentUserId }) => {
     });
 
     return result.slice(0, visibleCount);
-  }, [activities, authorFilter, sortOrder, visibleCount]);
+  }, [activities, filterType, authorFilter, sortOrder, visibleCount]);
 
   const handleActivityClick = async (owner, repo, sha) => {
     try {
@@ -136,7 +138,7 @@ const RepoView = ({ currentUserId }) => {
 
   if (loading) return (
     <div style={{ color: '#89cff0', padding: '50px', textAlign: 'center', fontSize: '18px' }}>
-      Updating dashboard for {owner}/{repo}...
+      Loading dashboard for {owner}/{repo}...
     </div>
   );
 
@@ -205,7 +207,7 @@ const RepoView = ({ currentUserId }) => {
           </>
         ) : (
           <div style={emptyStateStyle}>
-            <p style={{ color: '#89cff0', fontSize: '16px' }}>No activities found for "{authorFilter}".</p>
+            <p style={{ color: '#89cff0', fontSize: '16px' }}>No activities found for current filters.</p>
             <button
               onClick={() => { setFilterType("All"); setAuthorFilter(""); }}
               style={{ background: 'none', border: 'none', color: '#f5e6d3', textDecoration: 'underline', cursor: 'pointer', marginTop: '10px' }}
@@ -226,7 +228,7 @@ const RepoView = ({ currentUserId }) => {
   );
 };
 
-// --- STILOVI ---
+// ... (stils ostaje isti)
 const contributorSectionStyle = { marginTop: '30px', padding: '20px', backgroundColor: 'rgba(137, 207, 240, 0.05)', borderRadius: '15px', border: '1px solid rgba(137, 207, 240, 0.1)' };
 const contributorGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' };
 const contributorCardStyle = { backgroundColor: 'rgba(30, 38, 69, 0.8)', padding: '12px', borderRadius: '12px', textAlign: 'center', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
