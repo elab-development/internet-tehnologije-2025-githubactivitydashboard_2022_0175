@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import UserResults from '../components/UserResults';
 import ActivityFeed from '../components/ActivityFeed';
 import ActivityDetails from '../components/ActivityDetails';
 
 const RepoView = ({ currentUserId }) => {
   const { owner, repo } = useParams();
+  const navigate = useNavigate();
 
   // --- STATE ---
   const [githubData, setGithubData] = useState(null);
   const [activities, setActivities] = useState([]);
+  const [topContributors, setTopContributors] = useState([]); // NOVO
   const [loading, setLoading] = useState(true);
 
   // State za UI
@@ -21,7 +23,6 @@ const RepoView = ({ currentUserId }) => {
   const [showModal, setShowModal] = useState(false);
 
   // 1. RESET FILTERA NA PROMENU RUTE
-  // Čim se promeni owner ili repo u URL-u, vraćamo sve na početno
   useEffect(() => {
     setFilterType("All");
     setAuthorFilter("");
@@ -29,15 +30,29 @@ const RepoView = ({ currentUserId }) => {
     setVisibleCount(10);
   }, [owner, repo]);
 
-  // 2. GLAVNI FETCH PODATAKA
-  // Ovaj efekat reaguje na promenu URL-a ILI promenu filtera
+  // 2. FETCH TOP CONTRIBUTORS (NOVO)
+  useEffect(() => {
+    const fetchTopContributors = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/contributors/${owner}/${repo}?limit=4`);
+        if (res.ok) {
+          const data = await res.json();
+          setTopContributors(data);
+        }
+      } catch (e) {
+        console.error("Greška pri učitavanju kontributora:", e);
+      }
+    };
+    if (owner && repo) fetchTopContributors();
+  }, [owner, repo]);
+
+  // 3. GLAVNI FETCH PODATAKA
   useEffect(() => {
     const loadRepoDashboard = async () => {
       if (!owner || !repo) return;
 
       setLoading(true);
       try {
-        // Fetch osnovnih informacija o repou
         const res = await fetch('http://localhost:5000/api/repository/details', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -56,7 +71,6 @@ const RepoView = ({ currentUserId }) => {
           owner: owner
         });
 
-        // Fetch liste aktivnosti (koristi trenutni filterType)
         const actRes = await fetch('http://localhost:5000/api/activity/list', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -82,7 +96,6 @@ const RepoView = ({ currentUserId }) => {
     loadRepoDashboard();
   }, [owner, repo, filterType, authorFilter, currentUserId]);
 
-  // 3. LOGIKA ZA SORTIRANJE I PAGINACIJU (Frontend)
   const activitiesToShow = useMemo(() => {
     const result = [...activities].sort((a, b) => {
       const dateA = new Date(a.timestamp || a.date).getTime();
@@ -117,8 +130,33 @@ const RepoView = ({ currentUserId }) => {
       {/* Kartica sa informacijama o repou */}
       <UserResults githubData={githubData} />
 
-      <div style={{ marginTop: '40px' }}>
+      {/* NOVO: Top Contributors Section */}
+      {topContributors.length > 0 && (
+        <div style={contributorSectionStyle}>
+          <h3 style={{ color: '#89cff0', marginBottom: '15px', fontSize: '1.1rem', textAlign: 'left' }}>
+            Top Contributors
+          </h3>
+          <div style={contributorGridStyle}>
+            {topContributors.map(c => (
+              <div key={c.login} style={contributorCardStyle}>
+                <img src={c.avatar_url} alt={c.login} style={avatarStyle} />
+                <div style={{ fontWeight: 'bold', color: '#f5e6d3', fontSize: '0.9rem' }}>{c.login}</div>
+                <div style={{ fontSize: '0.8rem', color: '#89cff0' }}>{c.contributions} commits</div>
+              </div>
+            ))}
 
+            <div
+              onClick={() => navigate(`/repo/${owner}/${repo}/contributors`)}
+              style={{ ...contributorCardStyle, cursor: 'pointer', border: '1px dashed #89cff0', background: 'rgba(137, 207, 240, 0.1)' }}
+            >
+              <div style={{ fontSize: '1.2rem', color: '#89cff0', marginBottom: '5px' }}>→</div>
+              <div style={{ fontWeight: 'bold', color: '#89cff0', fontSize: '0.85rem' }}>Full Stats</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginTop: '40px' }}>
         {/* Toolbar za filtere */}
         <div style={{
           display: 'flex',
@@ -196,6 +234,40 @@ const RepoView = ({ currentUserId }) => {
 };
 
 // --- STILOVI ---
+const contributorSectionStyle = {
+  marginTop: '30px',
+  padding: '20px',
+  backgroundColor: 'rgba(137, 207, 240, 0.05)',
+  borderRadius: '15px',
+  border: '1px solid rgba(137, 207, 240, 0.1)'
+};
+
+const contributorGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+  gap: '12px'
+};
+
+const contributorCardStyle = {
+  backgroundColor: 'rgba(30, 38, 69, 0.8)',
+  padding: '12px',
+  borderRadius: '12px',
+  textAlign: 'center',
+  transition: 'transform 0.2s',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center'
+};
+
+const avatarStyle = {
+  width: '45px',
+  height: '45px',
+  borderRadius: '50%',
+  marginBottom: '8px',
+  border: '2px solid #89cff0'
+};
+
 const selectStyle = {
   backgroundColor: '#f5e6d3',
   color: '#1e2645',

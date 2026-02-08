@@ -1,3 +1,5 @@
+from collections import Counter
+
 import requests
 import os
 from dotenv import load_dotenv
@@ -52,13 +54,17 @@ class GitHubService:
             return None
 
     @staticmethod
-    def get_contributors(owner, repo):
+    def get_contributors(owner, repo, limit=None):
+        # GitHub podržava 'per_page' parametar direktno u URL-u
         url = f"https://api.github.com/repos/{owner}/{repo}/contributors"
+        if limit:
+            url += f"?per_page={limit}"
+
         response = requests.get(url, headers=GitHubService.get_headers())
 
         if response.status_code == 200:
             return response.json()
-        return []  # Vraćamo praznu listu ako nema podataka
+        return []
 
     @staticmethod
     def get_user_repos(username):
@@ -109,3 +115,45 @@ class GitHubService:
             "stats": data.get('stats'),
             "files": data.get('files', [])
         }
+
+    @staticmethod
+    def get_activity_contributors(owner, repo, activity_type='prs', limit=10):
+        """
+        Dohvata top kontributore na osnovu Pull Requestova ili Issues-a.
+        activity_type: 'prs' ili 'issues'
+        """
+        # GitHub /issues endpoint vraća i PR-ove, pa moramo paziti.
+        # Koristićemo search API jer je najprecizniji za agregaciju.
+
+        headers = GitHubService.get_headers()
+        type_filter = "pr" if activity_type == 'prs' else "issue"
+
+        # Tražimo poslednjih 100 (ili više) stavki da bismo izvukli statistiku
+        url = f"https://api.github.com/search/issues?q=repo:{owner}/{repo}+type:{type_filter}&per_page=100"
+
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            return []
+
+        items = response.json().get('items', [])
+
+        # Brojimo pojavljivanja korisnika (autora)
+        counts = Counter()
+        user_metadata = {}  # Čuvamo avatar_url da ne bismo ponovo pozivali API
+
+        for item in items:
+            login = item['user']['login']
+            counts[login] += 1
+            if login not in user_metadata:
+                user_metadata[login] = item['user']['avatar_url']
+
+        # Formatiramo podatke za frontend
+        sorted_contributors = []
+        for login, count in counts.most_common(limit):
+            sorted_contributors.append({
+                "login": login,
+                "count": count,
+                "avatar_url": user_metadata[login]
+            })
+
+        return sorted_contributors
