@@ -87,5 +87,31 @@ def delete_user(user_id):
         db.session.rollback()
         return jsonify({"message": f"Greška na serveru: {str(e)}"}), 500
 
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
+def update_user(user_id):
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"message": "Korisnik nije pronađen"}), 404
+
+        data = request.json
+
+        # Logika za promenu imena
+        if 'username' in data:
+            # Provera da li ime već postoji kod nekog drugog
+            new_name = data['username']
+            existing_user = User.query.filter_by(username=new_name).first()
+            if existing_user and existing_user.user_id != user_id:
+                return jsonify({"message": "To korisničko ime je već zauzeto!"}), 400
+
+            user.username = new_name
+
+        db.session.commit()
+        return jsonify({"message": f"Ime uspešno promenjeno u {user.username}"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": f"Greška: {str(e)}"}), 500
+
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)

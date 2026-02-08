@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
-const Navbar = ({ isInApp, handleLogout }) => {
+// Dodajemo userRole u listu argumenata (prop)
+const Navbar = ({ isInApp, handleLogout, userRole }) => {
   const navigate = useNavigate();
 
   const navStyle = {
@@ -27,9 +28,17 @@ const Navbar = ({ isInApp, handleLogout }) => {
     textDecoration: 'none'
   };
 
+  const adminButtonStyle = {
+    ...linkStyle,
+    color: '#1e2645',
+    backgroundColor: '#89cff0',
+    padding: '6px 12px',
+    borderRadius: '4px',
+    transition: '0.3s'
+  };
+
   return (
     <nav style={navStyle}>
-      {/* Puni naziv i popravljen klik */}
       <div
         style={{ fontSize: '20px', fontWeight: 'bold', cursor: 'pointer', letterSpacing: '2px' }}
         onClick={() => navigate("/")}
@@ -44,6 +53,12 @@ const Navbar = ({ isInApp, handleLogout }) => {
           <>
             <Link to="/following" style={linkStyle}>Following</Link>
             <Link to="/history" style={linkStyle}>History</Link>
+
+            {/* SADA JE DINAMIČNO: Gledamo userRole koji stiže iz App.js */}
+            {(userRole === 'Admin' || userRole === 'admin') && (
+              <Link to="/admin" style={adminButtonStyle}>Admin Panel</Link>
+            )}
+
             <span
               style={{ ...linkStyle, color: '#ff4d4d', marginLeft: '20px' }}
               onClick={handleLogout}

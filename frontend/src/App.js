@@ -15,7 +15,8 @@ import SearchHistory from './components/SearchHistory';
 import Home from './views/Home';
 import RepoView from './views/RepoView';
 import UserView from './views/UserView';
-import ContributorsView from './views/ContributorsView'; // 1. IMPORT KOMPONENTE
+import ContributorsView from './views/ContributorsView';
+import AdminView from './views/AdminView';
 
 function App() {
   const navigate = useNavigate();
@@ -24,12 +25,19 @@ function App() {
   const [isInApp, setIsInApp] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isLogin, setIsLogin] = useState(true);
-
+  const [userRole, setUserRole] = useState(null);
   // Proveravamo da li smo na Login/Reg stranici da sakrijemo brending
   const isAuthPage = location.pathname === '/auth';
+  const isAdminPage = location.pathname === '/admin';
+
+  const showBranding =
+    location.pathname === '/' ||
+    location.pathname.startsWith('/repo/') ||
+    location.pathname.startsWith('/user/');
 
   const handleLoginSuccess = (role, name, id) => {
     setCurrentUserId(id);
+    setUserRole(role);
     setIsInApp(true);
     navigate("/");
   };
@@ -37,23 +45,23 @@ function App() {
   const handleLogout = () => {
     setIsInApp(false);
     setCurrentUserId(null);
+    setUserRole(null);
     navigate("/");
   };
 
   return (
     <div className="App" style={{ backgroundColor: '#1e2645', minHeight: '100vh', color: '#f5e6d3', fontFamily: '"Georgia", serif' }}>
 
-      <Navbar isInApp={isInApp} handleLogout={handleLogout} />
+      <Navbar isInApp={isInApp} handleLogout={handleLogout} userRole={userRole} />
 
       <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px' }}>
 
-        {/* BRENDING SEKCIJA - Prikazuje se svuda osim na Login-u */}
-        {!isAuthPage && (
-          <div style={{ textAlign: 'center', width: '100%', marginBottom: '20px' }}>
-            <Header /> {/* Tvoj originalni naslov i slika */}
-            <SearchBox username={username} setUsername={setUsername} />
-          </div>
-        )}
+        {showBranding && (
+            <div style={{ textAlign: 'center', width: '100%', marginBottom: '20px' }}>
+              <Header />
+              <SearchBox username={username} setUsername={setUsername} />
+            </div>
+          )}
 
         <Routes>
           {/* LOGIN / REGISTRATION */}
@@ -79,7 +87,10 @@ function App() {
 
           {/* CONTRIBUTORS VIEW - 2. DEFINISANA RUTA SA PARAMETRIMA */}
           <Route path="/repo/:owner/:repo/contributors" element={<ContributorsView />} />
-
+          {/*RUTA ZA ADMINA */}
+          <Route path="/admin" element={
+            userRole === 'Admin' ? <AdminView /> : <Home isInApp={isInApp} />
+          } />
           {/* USER PROFILE */}
           <Route path="/user/:username" element={<UserView currentUserId={currentUserId} />} />
 
