@@ -29,6 +29,7 @@ def search_repos():
         "public_repos": user_info.get("public_repos"),
         "followers": user_info.get("followers"),
         "following": user_info.get("following"),
+        "public_gists": user_info.get("public_gists"),
         "repos_list": repos_list, # OVO MORA BITI OVDE
         "type": "user"
     }), 200
