@@ -1,7 +1,7 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
-const Navbar = ({ isInApp, userRole, handleLogout, goHome }) => {
+const Navbar = ({ isInApp, handleLogout }) => {
   const navigate = useNavigate();
 
   const navStyle = {
@@ -11,7 +11,10 @@ const Navbar = ({ isInApp, userRole, handleLogout, goHome }) => {
     padding: '15px 30px',
     backgroundColor: '#1e2645',
     borderBottom: '1px solid rgba(137, 207, 240, 0.3)',
-    color: '#f5e6d3'
+    color: '#f5e6d3',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1000
   };
 
   const linkStyle = {
@@ -20,57 +23,38 @@ const Navbar = ({ isInApp, userRole, handleLogout, goHome }) => {
     fontSize: '14px',
     fontWeight: 'bold',
     textTransform: 'uppercase',
-    letterSpacing: '1px',
     color: '#89cff0',
-    textDecoration: 'none',
-    transition: '0.3s'
+    textDecoration: 'none'
   };
 
   return (
     <nav style={navStyle}>
-      {/* Logo klik resetuje sve na početnu */}
+      {/* Puni naziv i popravljen klik */}
       <div
-        style={{ fontSize: '20px', fontWeight: 'bold', letterSpacing: '2px', cursor: 'pointer' }}
-        onClick={goHome}
+        style={{ fontSize: '20px', fontWeight: 'bold', cursor: 'pointer', letterSpacing: '2px' }}
+        onClick={() => navigate("/")}
       >
-        <span style={{ color: '#89cff0' }}>ITEH</span>
+        <span style={{ color: '#89cff0' }}>ITEH EXPLORER</span>
       </div>
 
       <div>
-        <span style={linkStyle} onClick={goHome}>HOME</span>
-
-        {/* Prikazujemo Following i History samo ako je korisnik ulogovan */}
-        {isInApp && (
-          <>
-            <span
-              style={{ ...linkStyle, color: '#89cff0' }}
-              onClick={() => navigate("/following")}
-            >
-               FOLLOWING
-            </span>
-            <span style={linkStyle} onClick={() => navigate("/history")}>
-                MY HISTORY
-            </span>
-          </>
-        )}
+        <Link to="/" style={linkStyle}>Home</Link>
 
         {isInApp ? (
-          <span
-            style={{ ...linkStyle, color: '#ff4d4d' }}
-            onClick={handleLogout}
-          >
-            LOGOUT
-          </span>
+          <>
+            <Link to="/following" style={linkStyle}>Following</Link>
+            <Link to="/history" style={linkStyle}>History</Link>
+            <span
+              style={{ ...linkStyle, color: '#ff4d4d', marginLeft: '20px' }}
+              onClick={handleLogout}
+            >
+              Logout
+            </span>
+          </>
         ) : (
-          <span style={linkStyle} onClick={() => navigate("/auth")}>LOGIN / SIGNUP</span>
+          <Link to="/auth" style={linkStyle}>LOGIN / SIGNUP</Link>
         )}
       </div>
-
-      {isInApp && (
-        <div style={{ fontSize: '10px', opacity: 0.7 }}>
-          LOGGED AS: <span style={{ color: '#89cff0' }}>{userRole?.toUpperCase()}</span>
-        </div>
-      )}
     </nav>
   );
 };

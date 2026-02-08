@@ -1,46 +1,38 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const SearchBox = ({ username, setUsername, handleSearch }) => {
+const SearchBox = ({ username, setUsername }) => {
+  const navigate = useNavigate();
+
+  const handleSearchTrigger = () => {
+    if (!username) return;
+    const cleanInput = username.trim().replace('@', '');
+
+    if (cleanInput.includes('/')) {
+      // SCENARIO 1: Repozitorijum (vlasnik/repo)
+      navigate(`/repo/${cleanInput}`);
+    } else {
+      // SCENARIO 2: Korisnik (@username)
+      navigate(`/user/${cleanInput}`);
+    }
+  };
+
   return (
-    <div style={{ marginBottom: '50px', width: '100%', textAlign: 'center' }}>
-      {/* Jedan naslov koji obuhvata sve */}
-      <h2 style={{
-        fontFamily: '"Georgia", serif',
-        fontSize: '32px',
-        color: '#89cff0',
-        marginBottom: '5px',
-        textTransform: 'uppercase'
-      }}>
-        GitHub Explorer
-      </h2>
-
-      {/* Podnaslov koji objašnjava svestranost */}
-      <p style={{ color: '#f5e6d3', opacity: 0.7, marginBottom: '25px', fontSize: '14px' }}>
-        Search users or analyze specific repositories in one place
-      </p>
-
+    <div style={{ width: '100%', maxWidth: '600px', margin: '0 auto', marginBottom: '30px' }}>
       <div style={{
         display: 'flex',
         backgroundColor: '#f5e6d3',
         borderRadius: '50px',
         padding: '5px 5px 5px 25px',
-        width: '100%',
-        maxWidth: '600px',
-        margin: '0 auto',
         alignItems: 'center',
         boxShadow: '0 15px 35px rgba(0,0,0,0.3)',
       }}>
         <input
           type="text"
-          // Placeholder koji "edukuje" korisnika o obe opcije
           placeholder="Enter @username or owner/repository..."
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              handleSearch(); // Samo poziva funkciju, bez slanja tipa
-            }
-          }}
+          onKeyDown={(e) => e.key === 'Enter' && handleSearchTrigger()}
           style={{
             flex: 1,
             border: 'none',
@@ -48,12 +40,11 @@ const SearchBox = ({ username, setUsername, handleSearch }) => {
             padding: '12px 0',
             fontSize: '16px',
             outline: 'none',
-            color: '#301142',
-            fontFamily: 'Georgia, serif'
+            color: '#301142'
           }}
         />
         <button
-          onClick={() => handleSearch()}
+          onClick={handleSearchTrigger}
           style={{
             backgroundColor: '#1e2645',
             color: '#f5e6d3',
@@ -62,18 +53,13 @@ const SearchBox = ({ username, setUsername, handleSearch }) => {
             borderRadius: '50px',
             fontWeight: 'bold',
             cursor: 'pointer',
-            textTransform: 'uppercase',
-            letterSpacing: '1px'
-          }}>
+            transition: '0.3s'
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = '#2a3663'}
+          onMouseOut={(e) => e.target.style.backgroundColor = '#1e2645'}
+        >
           Go
         </button>
-      </div>
-
-      {/* Mali vizuelni hintovi ispod koji razbijaju iluziju */}
-      <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'center', gap: '20px', fontSize: '12px', color: '#89cff0', opacity: 0.6 }}>
-         <span>Example: <b>@django</b></span>
-         <span>|</span>
-         <span>Example: <b>django/django</b></span>
       </div>
     </div>
   );
