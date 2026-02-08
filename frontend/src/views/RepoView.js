@@ -95,15 +95,23 @@ const RepoView = ({ currentUserId }) => {
 
     loadRepoDashboard();
   }, [owner, repo, filterType, authorFilter, currentUserId]);
+const activitiesToShow = useMemo(() => {
+  // 1. Filtriranje po autoru na frontu (radi na svako slovo instant)
+  let result = activities.filter(act => {
+    if (!authorFilter) return true;
+    const search = authorFilter.toLowerCase().trim().replace('@', '');
+    return act.author?.toLowerCase().includes(search);
+  });
 
-  const activitiesToShow = useMemo(() => {
-    const result = [...activities].sort((a, b) => {
-      const dateA = new Date(a.timestamp || a.date).getTime();
-      const dateB = new Date(b.timestamp || b.date).getTime();
-      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-    });
-    return result.slice(0, visibleCount);
-  }, [activities, sortOrder, visibleCount]);
+  // 2. Sortiranje
+  result.sort((a, b) => {
+    const dateA = new Date(a.timestamp || a.date || 0).getTime();
+    const dateB = new Date(b.timestamp || b.date || 0).getTime();
+    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+  });
+
+  return result.slice(0, visibleCount);
+}, [activities, authorFilter, sortOrder, visibleCount]);
 
   const handleActivityClick = async (owner, repo, sha) => {
     try {

@@ -40,8 +40,9 @@ def get_activity_list():
         owner = data.get('owner')
         repo = data.get('repo')
         filter_type = data.get('filter', 'All')
-        author_filter = data.get('author_filter', '')  # DODATO: Preuzimamo filter autora
+        author_filter = data.get('author_filter', '').lower().strip().replace('@', '')
 
+        # GitHub API limitiran na 100 događaja
         url = f"https://api.github.com/repos/{owner}/{repo}/events?per_page=100"
         headers = GitHubService.get_headers()
         response = requests.get(url, headers=headers)
@@ -53,15 +54,18 @@ def get_activity_list():
         activity_feed = []
 
         for event in events:
-            # 1. Filter po tipu aktivnosti (Push, Watch, itd.)
+            # 1. Filter po tipu (Push, Watch, itd.)
             raw_type = event.get("type", "").replace("Event", "")
             if filter_type != "All" and raw_type != filter_type:
                 continue
 
-            # 2. DODATO: Filter po autoru (Scenario 2.1.8)
+            # 2. Identifikacija autora
             pusher_login = event.get("actor", {}).get("login", "")
-            if author_filter and author_filter.lower() != pusher_login.lower():
-                continue
+
+            # 3. FILTRIRANJE: Provera da li korisničko ime POČINJE sa unetim filterom
+            if author_filter:
+                if not pusher_login.lower().startswith(author_filter):
+                    continue
 
             payload = event.get("payload", {})
             commits = payload.get("commits", [])
@@ -79,14 +83,13 @@ def get_activity_list():
                 "repo_full": f"{owner}/{repo}"
             })
 
-            # Limitiramo na 20 rezultata nakon filtriranja
-            if len(activity_feed) >= 20:
+            if len(activity_feed) >= 50:
                 break
 
         return jsonify(activity_feed), 200
     except Exception as e:
+        print(f"Greška u get_activity_list: {e}")
         return jsonify({"error": str(e)}), 500
-
 # --- RUTA ZA MODAL (DETALJI KOMITA) ---
 @activity_bp.route('/api/activity/details/<owner>/<repo>/<sha>', methods=['GET'])
 def get_activity_details(owner, repo, sha):
