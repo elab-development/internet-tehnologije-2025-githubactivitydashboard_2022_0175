@@ -1,12 +1,12 @@
 
 from flask_sqlalchemy import SQLAlchemy
-from flask_marshmallow import Marshmallow  # Dodaj ovo
+from flask_marshmallow import Marshmallow
 from datetime import datetime
 ("Zato što mi omogućava automatsko mapiranje. Umesto da ručno kucam svaki tip podatka, "
  "Marshmallow 'čita' moj model i zna da je"
  " email string, a timestamp datum, što smanjuje mogućnost greške.")
 db = SQLAlchemy()
-ma = Marshmallow()  # Dodaj ovo ovde
+ma = Marshmallow()
 
 
 class User(db.Model):
@@ -16,7 +16,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default='User')
-    avatar_url = db.Column(db.String(255), nullable=True)  # DODAJ OVO
+    avatar_url = db.Column(db.String(255), nullable=True)
 
     # Veze
     follows = db.relationship('UserRepoFollow', backref='user', lazy=True, cascade="all, delete-orphan")
@@ -47,7 +47,7 @@ class Activity(db.Model):
     event_type = db.Column(db.String(50))
     actor_username = db.Column(db.String(100))
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    payload = db.Column(db.JSON) # Odlično za GitHub API odgovor
+    payload = db.Column(db.JSON)
     summary = db.Column(db.Text)
     repo_id = db.Column(db.Integer, db.ForeignKey('repositories.repo_id'), nullable=False)
 

@@ -7,8 +7,6 @@ from dotenv import load_dotenv
 # 1. Specifično učitavanje - tražimo .env u trenutnom folderu
 load_dotenv(override=True)
 
-# 2. Pomeri dobijanje tokena UNUTAR funkcije get_headers
-# (da bi bio siguran da ga pokupi nakon što load_dotenv odradi svoje)
 
 class GitHubService:
     @staticmethod
@@ -45,7 +43,6 @@ class GitHubService:
 
             if response.status_code == 200:
                 data = response.json()
-                # DODAJ OVO: Da bi u terminalu videla koja je grana glavna
                 print(f"DEBUG: Repo {repo} koristi granu: {data.get('default_branch')}")
                 return data
             return None
@@ -55,7 +52,6 @@ class GitHubService:
 
     @staticmethod
     def get_contributors(owner, repo, limit=None):
-        # GitHub podržava 'per_page' parametar direktno u URL-u
         url = f"https://api.github.com/repos/{owner}/{repo}/contributors"
         if limit:
             url += f"?per_page={limit}"
@@ -97,12 +93,9 @@ class GitHubService:
 
         data = response.json()
 
-        # --- OVDE JE BILA GREŠKA, SAD POPRAVLJAMO ---
-        # Umesto 'name', prvo tražimo 'login' (to je ono @jacobtylerwalls)
+
         author_login = data.get('author', {}).get('login')
 
-        # Ako GitHub slučajno nema login (desi se kod starih komita),
-        # tek onda uzmi name kao rezervu
         if not author_login:
             author_login = data.get('commit', {}).get('author', {}).get('name')
 

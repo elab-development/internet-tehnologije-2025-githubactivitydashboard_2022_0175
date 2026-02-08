@@ -136,7 +136,6 @@ const ContributorsView = () => {
   );
 };
 
-// --- STILOVI ---
 
 const chartContainerStyle = {
   backgroundColor: 'rgba(30, 38, 69, 0.7)',

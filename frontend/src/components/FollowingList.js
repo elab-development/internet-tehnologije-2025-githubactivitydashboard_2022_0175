@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom'; // BITNO: Za navigaciju unutar tvoje aplikacije
+import { Link } from 'react-router-dom';
 
 const FollowingList = ({ userId }) => {
     const [repos, setRepos] = useState([]);
@@ -11,7 +11,7 @@ const FollowingList = ({ userId }) => {
 
             setLoading(true);
             try {
-                // Proveri da li ti je backend ruta tačna
+
                 const response = await fetch(`http://localhost:5000/api/following?user_id=${userId}`);
 
                 if (response.ok) {
@@ -35,13 +35,13 @@ const FollowingList = ({ userId }) => {
         if (!confirmDelete) return;
 
         try {
-            // Pretpostavljam da backend briše preko user_id i repo_id
+
             const response = await fetch(`http://localhost:5000/api/watchlist/unfollow?user_id=${userId}&repo_id=${repoId}`, {
                 method: 'DELETE'
             });
 
             if (response.ok) {
-                // UI TRIK: Odmah ga izbaci iz liste da ne moraš da radiš refresh
+
                 setRepos(prevRepos => prevRepos.filter(repo => repo.repo_id !== repoId));
             } else {
                 alert("Došlo je do greške pri brisanju.");
@@ -69,7 +69,7 @@ const FollowingList = ({ userId }) => {
                     {repos.map((repo) => (
                         <div key={repo.repo_id} style={cardStyle}>
                             <div style={{ flex: 1 }}>
-                                {/* OVO JE NOVO: Vodi na tvoju stranicu sa statistikom */}
+                                {/* vodi na stranicu sa statistikom */}
                                 <h3 style={{ margin: '0 0 5px 0' }}>
                                     <Link
                                         to={`/repo/${repo.full_name}`}
@@ -79,7 +79,7 @@ const FollowingList = ({ userId }) => {
                                     </Link>
                                 </h3>
 
-                                {/* Link ka pravom GitHub-u (opciono) */}
+                                {/* Link ka pravom GitHub-u */}
                                 <a
                                     href={repo.url}
                                     target="_blank"
@@ -104,7 +104,6 @@ const FollowingList = ({ userId }) => {
     );
 };
 
-// --- STILOVI (Da se uklopi u tvoj dizajn) ---
 
 const containerStyle = {
     width: '100%',
@@ -145,8 +144,8 @@ const gridStyle = {
 };
 
 const cardStyle = {
-    backgroundColor: 'rgba(30, 38, 69, 0.8)', // Tamna pozadina kartice
-    border: '1px solid rgba(137, 207, 240, 0.3)', // Plavi okvir
+    backgroundColor: 'rgba(30, 38, 69, 0.8)',
+    border: '1px solid rgba(137, 207, 240, 0.3)',
     padding: '20px',
     borderRadius: '10px',
     display: 'flex',

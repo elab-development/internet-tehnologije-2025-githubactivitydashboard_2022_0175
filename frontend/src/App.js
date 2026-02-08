@@ -59,7 +59,7 @@ function App() {
     }
   }, []);
 const handleLogout = () => {
-  localStorage.removeItem('userSession'); // Obavezno dodaj ovo!
+  localStorage.removeItem('userSession');
   setIsInApp(false);
   setCurrentUserId(null);
   setUserRole(null);

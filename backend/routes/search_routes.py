@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from services.github_service import GitHubService
 from services.search_service import SearchService
-from schemas.searchhistory_schema import SearchHistorySchema  # Pretpostavljam da se tako zove u tvojim šemama
+from schemas.searchhistory_schema import SearchHistorySchema
 
 search_bp = Blueprint('search', __name__)
 search_schema = SearchHistorySchema(many=True)
@@ -17,7 +17,6 @@ def search_repos():
     if not user_info:
         return jsonify({"error": "Korisnik ne postoji"}), 404
 
-    # --- OVO SI MOŽDA ZABORAVILA ---
     # Moramo stvarno pozvati GitHub da nam da listu repo-a
     repos_list = GitHubService.get_user_repos(query)
 

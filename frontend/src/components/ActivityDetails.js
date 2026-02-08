@@ -8,11 +8,11 @@ const ActivityDetails = ({ details, onClose }) => {
       position: 'fixed',
       top: 0, left: 0,
       width: '100%', height: '100%',
-      backgroundColor: 'rgba(0, 0, 0, 0.85)', // Zatamni sve iza
+      backgroundColor: 'rgba(0, 0, 0, 0.85)',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 10000 // Da bude APSOLUTNO iznad svega
+      zIndex: 10000
     }}>
       <div style={{
         backgroundColor: '#1a1a2e',

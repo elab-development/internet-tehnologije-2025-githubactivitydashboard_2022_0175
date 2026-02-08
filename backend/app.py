@@ -31,7 +31,6 @@ db.init_app(app)
 ma.init_app(app)
 migrate = Migrate(app, db)
 
-# 4. TEK SADA REGISTRUJEMO BLUEPRINTOVE (Izbegavamo Circular Import)
 from routes.auth_routes import auth_bp
 from routes.search_routes import search_bp
 from routes.repository_routes import repo_bp
