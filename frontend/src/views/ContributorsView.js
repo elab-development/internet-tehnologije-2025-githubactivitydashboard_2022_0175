@@ -14,7 +14,7 @@ import { Bar } from 'react-chartjs-2';
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const ContributorsView = () => {
-  const { owner, repo } = useParams();
+  const { owner, repo } = useParams(); //cita Url adresu u browseru
   const navigate = useNavigate();
   const [contributors, setContributors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +39,7 @@ const ContributorsView = () => {
       }
     };
     fetchAllContributors();
-  }, [owner, repo]);
+  }, [owner, repo]); //cim se ucita pokreni fju, al je pokreni i ako se u urlu promene owner ili repo
 
   // Podaci za grafikon (Samo Commits)
   const chartData = {

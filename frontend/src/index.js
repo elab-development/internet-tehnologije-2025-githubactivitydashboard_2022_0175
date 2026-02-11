@@ -3,10 +3,10 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { BrowserRouter } from 'react-router-dom'; // DODAJ OVO
+import { BrowserRouter } from 'react-router-dom';
 
 
-// Proveri da li je ovo tačno ovako:
+
 const rootElement = document.getElementById('root');
 const root = ReactDOM.createRoot(rootElement);
 

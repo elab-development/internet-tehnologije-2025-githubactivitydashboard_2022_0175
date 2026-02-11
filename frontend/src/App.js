@@ -19,13 +19,14 @@ import ContributorsView from './views/ContributorsView';
 import AdminView from './views/AdminView';
 
 function App() {
-  const navigate = useNavigate();
-  const location = useLocation(); // Pratimo gde se nalazimo
-  const [username, setUsername] = useState("");
-  const [isInApp, setIsInApp] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState(null);
-  const [isLogin, setIsLogin] = useState(true);
-  const [userRole, setUserRole] = useState(null);
+  const navigate = useNavigate(); //volan, kako se krecemo kroz apk
+  const location = useLocation(); // Pratimo gde se nalazimo, /auth,/admin...
+  // useState je nacin na koji React pamti stvari dok se stranica ne osvezi,
+  const [username, setUsername] = useState(""); //cuva ime ulog korisnika
+  const [isInApp, setIsInApp] = useState(false);//gleda dal smo ulogovani ili ne
+  const [currentUserId, setCurrentUserId] = useState(null);//kad zelimo da zapratimo neki repo
+  const [isLogin, setIsLogin] = useState(true); //dal je registruj se ili prijavi se
+  const [userRole, setUserRole] = useState(null); //dal si admin ili user
   // Proveravamo da li smo na Login/Reg stranici da sakrijemo brending
   const isAuthPage = location.pathname === '/auth';
   const isAdminPage = location.pathname === '/admin';
@@ -34,13 +35,16 @@ function App() {
     location.pathname === '/' ||
     location.pathname.startsWith('/repo/') ||
     location.pathname.startsWith('/user/');
-
+//"Čim se App.js učita (prazne zagrade []), ti skokni do onog sefa u brauzeru
+ //(localStorage) i vidi da li su Anja ili Una već ulogovane. To uradi
+ //samo tad i posle me pusti da radim."
   const handleLoginSuccess = (role, name, id) => {
     // Prvo sačuvamo u browseru da se ne izbriše na refresh
     const userData = { role, name, id };
     localStorage.setItem('userSession', JSON.stringify(userData));
+   //bez ovoga, cim kliknemo refresh, apk bi nas izlogovala
 
-    // Zatim setujemo state kao i do sada
+
     setCurrentUserId(id);
     setUserRole(role);
     setIsInApp(true);
@@ -57,7 +61,7 @@ function App() {
       setIsInApp(true);
       // Ovde ne radimo navigate("/") da ne bismo prekinuli korisnika ako je bio na nekom repo-u
     }
-  }, []);
+  }, []); //pokreni ovo samo jednom, cim se apk prvi put ucita u browseru
 const handleLogout = () => {
   localStorage.removeItem('userSession');
   setIsInApp(false);

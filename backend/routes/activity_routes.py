@@ -72,7 +72,7 @@ def get_activity_list():
 
             sha = commits[0].get("sha") if commits else payload.get("head")
             title = commits[0].get("message", "").split('\n')[0] if commits else f"Activity: {raw_type}"
-
+            #samo rpvi red commita
             activity_feed.append({
                 "id": event.get("id"),
                 "type": raw_type,
@@ -99,7 +99,11 @@ def get_activity_details(owner, repo, sha):
 
     if response.status_code == 200:
         data = response.json()
-
+#"Uzmi korisničko ime onoga ko je uneo (committer), ako to nema,
+        # uzmi onoga ko je napisao (author), a ako ni to nema
+        # (npr. nalog je obrisan), uzmi obično ime iz teksta komita".
+        # Ovo osigurava da polje "Author" u tvojoj aplikaciji nikada
+        # ne ostane prazno.
         author_display = data.get("committer", {}).get("login") or data.get("author", {}).get("login")
         if not author_display:
             author_display = data.get("commit", {}).get("author", {}).get("name")

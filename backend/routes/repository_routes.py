@@ -6,7 +6,9 @@ repo_bp = Blueprint('repo_bp', __name__)
 
 @repo_bp.route('/api/repository/<owner>/<repo_name>', methods=['GET'])
 def get_repo_info(owner, repo_name):
+    #spajamo vlasnika u ime repoa kao facebook/react
     full_name = f"{owner}/{repo_name}"
+    #pozivamo nas servis koji kontaktira API
     details = GitHubService.get_repo_details(full_name)
     if not details:
         return jsonify({"error": "Repository not found"}), 404

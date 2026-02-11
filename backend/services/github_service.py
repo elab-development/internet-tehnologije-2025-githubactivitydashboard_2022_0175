@@ -13,7 +13,7 @@ class GitHubService:
     def get_headers():
         # Uzimamo token direktno iz os.environ u trenutku poziva
         token = os.getenv('GITHUB_TOKEN')
-
+        #format preko kog komuniciramo verzija 3 API-ja u jsonu
         headers = {
             "Accept": "application/vnd.github.v3+json"
         }

@@ -13,6 +13,7 @@ const UserTable = () => {
             .catch(err => console.error("Error fetching users:", err));
     };
 
+
     useEffect(() => {
         fetchUsers();
     }, []);

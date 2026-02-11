@@ -20,7 +20,7 @@ def register():
 
     # Hešovanje lozinke
     hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
-
+#proba
     new_user = User(
         username=username,
         email=email,
