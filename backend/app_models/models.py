@@ -2,11 +2,20 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow  # Dodaj ovo
 from datetime import datetime
-("Zato što mi omogućava automatsko mapiranje. Umesto da ručno kucam svaki tip podatka, "
- "Marshmallow 'čita' moj model i zna da je"
- " email string, a timestamp datum, što smanjuje mogućnost greške.")
 db = SQLAlchemy()
-ma = Marshmallow()  # Dodaj ovo ovde
+ma = Marshmallow()  # Dodaj ovo ovde  -> da bi seme znale na sta referenciraju
+
+#SQLAlchemy: To je ORM (Object-Relational Mapper).
+# Njegov posao je da poveže tvoj Python kod sa bazom podataka.
+# Umesto da pišeš SQL upite (npr. SELECT * FROM users),
+# ti koristiš Python objekte. On kreira tabele, definiše kolone i upravlja vezama.
+#Marshmallow: To je biblioteka za serijalizaciju i deserijalizaciju.
+
+#Serijalizacija: Pretvara Python objekte iz baze u JSON format
+# (koji razumeju frontend aplikacije ili mobilni telefoni).
+
+#Deserijalizacija: Proverava podatke koji stižu sa frontenda i
+# pretvara ih u Python objekte koje baza može da sačuva.
 
 
 class User(db.Model):
@@ -21,7 +30,6 @@ class User(db.Model):
     # Veze
     follows = db.relationship('UserRepoFollow', backref='user', lazy=True, cascade="all, delete-orphan")
     searches = db.relationship('SearchHistory', backref='user', lazy=True, cascade="all, delete-orphan")
-
 
 
     def __repr__(self):

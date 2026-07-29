@@ -31,6 +31,7 @@ const SearchBox = ({ username, setUsername }) => {
           type="text"
           placeholder="Enter @username or owner/repository..."
           value={username}
+          /*event handler*/
           onChange={(e) => setUsername(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearchTrigger()}
           style={{

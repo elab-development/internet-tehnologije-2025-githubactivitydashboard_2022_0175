@@ -13,7 +13,6 @@ def get_my_history():
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
 
-    # Koristimo SearchService jer on gleda tabelu SearchHistory (ono što si kucala)
     history = SearchService.get_user_history(user_id)
 
     result = []
@@ -77,3 +76,5 @@ def unfollow_repo():
         return jsonify({"message": "Successfully removed"}), 200
     else:
         return jsonify({"error": "Not found in following list"}), 404
+
+

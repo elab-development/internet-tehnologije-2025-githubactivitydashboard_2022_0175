@@ -3,8 +3,7 @@ from app_models.models import db, SearchHistory
 class SearchService:
     @staticmethod
     def log_search(user_id, query, search_type):
-        # Uklanjamo 'if user_id:' uslov ako želimo da logujemo i anonimne pretrage
-        # ili ostavljamo, ali dodajemo DEBUG print da znamo zašto je preskočeno
+
         if not user_id:
             print("DEBUG: Pretraga nije sačuvana jer user_id nije prosleđen.")
             return False

@@ -13,6 +13,7 @@ const UserTable = () => {
             .catch(err => console.error("Error fetching users:", err));
     };
 
+
     useEffect(() => {
         fetchUsers();
     }, []);
@@ -50,7 +51,7 @@ const UserTable = () => {
                     </thead>
                     <tbody>
                         {users.map(user => (
-                            // VAŽNO: Koristimo user.id jer tako piše u tvom app.py (u list comprehension-u)
+                            // VAŽNO: Koristimo user.id jer tako piše u app.py (u list comprehension-u)
                             <tr key={user.id} style={{ borderBottom: '1px solid rgba(137, 207, 240, 0.2)' }}>
                                 <td style={{ padding: '10px' }}>{user.id}</td>
                                 <td style={{ padding: '10px' }}>{user.username}</td>

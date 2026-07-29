@@ -1,4 +1,6 @@
 from collections import Counter
+#generalno ova klasa ce biti zaduzena za slanje zahteva ka github apiju
+#zato imamo metodu headers kojom cemo praviti zaglavlje za zahteve
 
 import requests
 import os
@@ -7,17 +9,16 @@ from dotenv import load_dotenv
 # 1. Specifično učitavanje - tražimo .env u trenutnom folderu
 load_dotenv(override=True)
 
-# 2. Pomeri dobijanje tokena UNUTAR funkcije get_headers
-# (da bi bio siguran da ga pokupi nakon što load_dotenv odradi svoje)
 
 class GitHubService:
     @staticmethod
     def get_headers():
         # Uzimamo token direktno iz os.environ u trenutku poziva
         token = os.getenv('GITHUB_TOKEN')
-
+        #format preko kog komuniciramo verzija 3 API-ja u jsonu
         headers = {
-            "Accept": "application/vnd.github.v3+json"
+            "Accept": "application/vnd.github.v3+json" #definisemo kakav
+            #odgovor od GitHuba ocekujemo
         }
 
         if token:
@@ -41,11 +42,12 @@ class GitHubService:
             owner, repo = parts[-2], parts[-1]
 
             url = f"https://api.github.com/repos/{owner}/{repo}"
+            #ovo je finalni url ka github apiju
             response = requests.get(url, headers=GitHubService.get_headers())
-
+            #resposne je python objekat, pa ga moramo pretvoriti u json zbog fronta
+            #ovo je get zahtev kao github apiju
             if response.status_code == 200:
                 data = response.json()
-                # DODAJ OVO: Da bi u terminalu videla koja je grana glavna
                 print(f"DEBUG: Repo {repo} koristi granu: {data.get('default_branch')}")
                 return data
             return None
@@ -55,7 +57,6 @@ class GitHubService:
 
     @staticmethod
     def get_contributors(owner, repo, limit=None):
-        # GitHub podržava 'per_page' parametar direktno u URL-u
         url = f"https://api.github.com/repos/{owner}/{repo}/contributors"
         if limit:
             url += f"?per_page={limit}"
@@ -67,7 +68,7 @@ class GitHubService:
         return []
 
     @staticmethod
-    def get_user_repos(username):
+    def get_user_repos(username): #vraca listu javnoh repo za korisnika
         url = f"https://api.github.com/users/{username}/repos"
         response = requests.get(url, headers=GitHubService.get_headers())
         if response.status_code == 200:
@@ -97,12 +98,9 @@ class GitHubService:
 
         data = response.json()
 
-        # --- OVDE JE BILA GREŠKA, SAD POPRAVLJAMO ---
-        # Umesto 'name', prvo tražimo 'login' (to je ono @jacobtylerwalls)
+
         author_login = data.get('author', {}).get('login')
 
-        # Ako GitHub slučajno nema login (desi se kod starih komita),
-        # tek onda uzmi name kao rezervu
         if not author_login:
             author_login = data.get('commit', {}).get('author', {}).get('name')
 

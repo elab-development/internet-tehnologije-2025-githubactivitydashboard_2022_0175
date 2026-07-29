@@ -7,7 +7,8 @@ Create Date: 2026-01-30 23:29:51.017496
 """
 from alembic import op
 import sqlalchemy as sa
-
+#objekat iz alembica koji sluzi za izvrsavanje operacija nad bazom
+#operations
 
 # revision identifiers, used by Alembic.
 revision = '66b4d2b74cd9'

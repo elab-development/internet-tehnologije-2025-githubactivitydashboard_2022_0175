@@ -54,7 +54,6 @@ const Navbar = ({ isInApp, handleLogout, userRole }) => {
             <Link to="/following" style={linkStyle}>Following</Link>
             <Link to="/history" style={linkStyle}>History</Link>
 
-            {/* SADA JE DINAMIČNO: Gledamo userRole koji stiže iz App.js */}
             {(userRole === 'Admin' || userRole === 'admin') && (
               <Link to="/admin" style={adminButtonStyle}>Admin Panel</Link>
             )}

@@ -90,11 +90,10 @@ const AdminView = () => {
   );
 };
 
-// --- WIDE & SLEEK DASHBOARD STYLES ---
 
 const containerStyle = {
-  width: '65%', // Smanjeno sa 95% na 85% - to je ta "malo uža" promena
-  maxWidth: '1000px', // Ne damo mu da ide u beskonačnost na velikim ekranima
+  width: '65%',
+  maxWidth: '1000px',
   margin: '50px auto',
   padding: '0 20px',
   animation: 'fadeIn 0.8s ease-out'
@@ -115,7 +114,6 @@ const statBox = {
   boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
 };
 
-// OVO SU LINIJE KOJE SU NEDOSTAJALE:
 const statLabel = {
   fontSize: '12px',
   color: '#89cff0',

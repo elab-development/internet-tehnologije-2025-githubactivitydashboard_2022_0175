@@ -1,6 +1,6 @@
 from app_models.models import ma, SearchHistory
 
-# Promeni ma.Schema u ma.SQLAlchemyAutoSchema
+
 class SearchHistorySchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = SearchHistory

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom'; // BITNO: Za navigaciju unutar tvoje aplikacije
+import { Link } from 'react-router-dom'; // BITNO: Za navigaciju unutar aplikacije
 
 const FollowingList = ({ userId }) => {
     const [repos, setRepos] = useState([]);
@@ -31,7 +31,7 @@ const FollowingList = ({ userId }) => {
     }, [userId]);
 
     const handleUnfollow = async (repoId) => {
-        const confirmDelete = window.confirm("Da li sigurno želiš da prestaneš da pratiš ovaj repo?");
+        const confirmDelete = window.confirm("Are you sure you want to unfollow this repository?");
         if (!confirmDelete) return;
 
         try {
@@ -44,10 +44,10 @@ const FollowingList = ({ userId }) => {
                 // UI TRIK: Odmah ga izbaci iz liste da ne moraš da radiš refresh
                 setRepos(prevRepos => prevRepos.filter(repo => repo.repo_id !== repoId));
             } else {
-                alert("Došlo je do greške pri brisanju.");
+                alert("Error occured while attempting to delete your follow.");
             }
         } catch (error) {
-            console.error("Greška pri brisanju:", error);
+            console.error("Error:", error);
         }
     };
 
