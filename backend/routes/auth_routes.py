@@ -49,5 +49,6 @@ def login():
             "username": user.username,
             "role": user.role
         }), 200
+#hteli smo specificnu poruku i samo ova tri podataka da se ispisu ne ono sve iz seme
 
     return jsonify({"error": "Invalid username or password"}), 401

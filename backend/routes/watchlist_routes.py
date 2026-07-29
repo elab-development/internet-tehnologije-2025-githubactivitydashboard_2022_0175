@@ -76,3 +76,5 @@ def unfollow_repo():
         return jsonify({"message": "Successfully removed"}), 200
     else:
         return jsonify({"error": "Not found in following list"}), 404
+
+

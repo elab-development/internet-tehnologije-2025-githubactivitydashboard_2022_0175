@@ -29,3 +29,4 @@ def get_repo_contributors(owner, repo_name):
         return jsonify(contributors[:limit]), 200
 
     return jsonify(contributors), 200
+

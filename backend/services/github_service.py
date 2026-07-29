@@ -1,4 +1,6 @@
 from collections import Counter
+#generalno ova klasa ce biti zaduzena za slanje zahteva ka github apiju
+#zato imamo metodu headers kojom cemo praviti zaglavlje za zahteve
 
 import requests
 import os
@@ -15,7 +17,8 @@ class GitHubService:
         token = os.getenv('GITHUB_TOKEN')
         #format preko kog komuniciramo verzija 3 API-ja u jsonu
         headers = {
-            "Accept": "application/vnd.github.v3+json"
+            "Accept": "application/vnd.github.v3+json" #definisemo kakav
+            #odgovor od GitHuba ocekujemo
         }
 
         if token:
@@ -39,8 +42,10 @@ class GitHubService:
             owner, repo = parts[-2], parts[-1]
 
             url = f"https://api.github.com/repos/{owner}/{repo}"
+            #ovo je finalni url ka github apiju
             response = requests.get(url, headers=GitHubService.get_headers())
-
+            #resposne je python objekat, pa ga moramo pretvoriti u json zbog fronta
+            #ovo je get zahtev kao github apiju
             if response.status_code == 200:
                 data = response.json()
                 print(f"DEBUG: Repo {repo} koristi granu: {data.get('default_branch')}")
@@ -63,7 +68,7 @@ class GitHubService:
         return []
 
     @staticmethod
-    def get_user_repos(username):
+    def get_user_repos(username): #vraca listu javnoh repo za korisnika
         url = f"https://api.github.com/users/{username}/repos"
         response = requests.get(url, headers=GitHubService.get_headers())
         if response.status_code == 200:

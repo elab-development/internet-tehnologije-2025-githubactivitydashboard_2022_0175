@@ -1,12 +1,21 @@
 
 from flask_sqlalchemy import SQLAlchemy
-from flask_marshmallow import Marshmallow
+from flask_marshmallow import Marshmallow  # Dodaj ovo
 from datetime import datetime
-("Zato što mi omogućava automatsko mapiranje. Umesto da ručno kucam svaki tip podatka, "
- "Marshmallow 'čita' moj model i zna da je"
- " email string, a timestamp datum, što smanjuje mogućnost greške.")
 db = SQLAlchemy()
-ma = Marshmallow()
+ma = Marshmallow()  # Dodaj ovo ovde  -> da bi seme znale na sta referenciraju
+
+#SQLAlchemy: To je ORM (Object-Relational Mapper).
+# Njegov posao je da poveže tvoj Python kod sa bazom podataka.
+# Umesto da pišeš SQL upite (npr. SELECT * FROM users),
+# ti koristiš Python objekte. On kreira tabele, definiše kolone i upravlja vezama.
+#Marshmallow: To je biblioteka za serijalizaciju i deserijalizaciju.
+
+#Serijalizacija: Pretvara Python objekte iz baze u JSON format
+# (koji razumeju frontend aplikacije ili mobilni telefoni).
+
+#Deserijalizacija: Proverava podatke koji stižu sa frontenda i
+# pretvara ih u Python objekte koje baza može da sačuva.
 
 
 class User(db.Model):
@@ -16,12 +25,11 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default='User')
-    avatar_url = db.Column(db.String(255), nullable=True)
+    avatar_url = db.Column(db.String(255), nullable=True)  # DODAJ OVO
 
     # Veze
     follows = db.relationship('UserRepoFollow', backref='user', lazy=True, cascade="all, delete-orphan")
     searches = db.relationship('SearchHistory', backref='user', lazy=True, cascade="all, delete-orphan")
-
 
 
     def __repr__(self):
@@ -47,7 +55,7 @@ class Activity(db.Model):
     event_type = db.Column(db.String(50))
     actor_username = db.Column(db.String(100))
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    payload = db.Column(db.JSON)
+    payload = db.Column(db.JSON) # Odlično za GitHub API odgovor
     summary = db.Column(db.Text)
     repo_id = db.Column(db.Integer, db.ForeignKey('repositories.repo_id'), nullable=False)
 

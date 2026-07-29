@@ -6,8 +6,16 @@ Create Date: 2026-02-05 17:38:24.843614
 
 """
 from alembic import op
-import sqlalchemy as sa
+#Alembic je alat za migracije baza podataka koji
+# je specifično dizajniran za rad sa SQLAlchemy bibliotekom.
 
+import sqlalchemy as sa
+#alat za verzionisanje baze
+#omogucavaju da baza prati promene naseg koda
+# ako mi promenimo neku klasu Modela, baza to nece automatski znati
+#ali mi migracijom obavestimo da izvrsi promenu
+#takodje omogucavaju bazi da se vrati na prethodno stanje
+#i da baza primenjuje iste promene na razlicitim racunarima
 
 # revision identifiers, used by Alembic.
 revision = '28e8561c0b2b'

@@ -76,9 +76,9 @@ def dodaj_nas():
         db.session.query(User).delete()
         pw = bcrypt.generate_password_hash('123').decode('utf-8') #hesujemo lozinku radi bezbednosti
         db.session.add(User(username='Anja', email='anja@example.com', password=pw, role='Admin'))
-        db.session.add(User(username='Una', email='una@example.com', password=pw, role='User'))
+        db.session.add(User(username='Una', email='una@example.com', password=pw, role='Admin'))
         db.session.commit()
-        return "Anja (Admin) i Una (Korisnik) uspešno upisane!"
+        return "Anja (Admin) i Una (Amind) uspešno upisane!"
     except Exception as e:
         db.session.rollback()
         return f"Greška: {e}"
