@@ -1,14 +1,10 @@
-from app_models.models import db, ma, UserRepoFollow
+from app_models.models import ma, UserRepoFollow
 
-
-class WatchlistSchema(ma.SQLAlchemyAutoSchema):
+class WatchlistSchema(ma.Schema):
     class Meta:
-        model = UserRepoFollow
-        load_instance = True
-        include_fk = True  # obavezno - oba polja su strani kljucevi
-        sqla_session = db.session
+        model = UserRepoFollow  # <--- Dodajemo ovo da povežemo sa modelom
+        load_instance = True    # <--- Ovo omogućava da JSON pretvoriš nazad u Model objekat
         fields = ("user_id", "repo_id", "date_added")
-
 
 watchlist_schema = WatchlistSchema()
 watchlists_schema = WatchlistSchema(many=True)
