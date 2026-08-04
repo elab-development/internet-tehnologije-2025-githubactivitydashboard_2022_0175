@@ -56,46 +56,6 @@ class GitHubService:
             return None
 
     @staticmethod
-    def get_repo_events(owner, repo, filter_type='All', author_filter=''):
-        """Vraca filtriranu listu dogadjaja za repo, spremnu za frontend."""
-        url = f"https://api.github.com/repos/{owner}/{repo}/events?per_page=100"
-        response = requests.get(url, headers=GitHubService.get_headers())
-
-        if response.status_code != 200:
-            return None
-
-        author_filter = (author_filter or '').lower().strip().replace('@', '')
-        activity_feed = []
-
-        for event in response.json():
-            raw_type = event.get("type", "").replace("Event", "")
-            if filter_type != "All" and raw_type != filter_type:
-                continue
-
-            pusher_login = event.get("actor", {}).get("login", "")
-            if author_filter and not pusher_login.lower().startswith(author_filter):
-                continue
-
-            payload = event.get("payload", {})
-            commits = payload.get("commits", [])
-            sha = commits[0].get("sha") if commits else payload.get("head")
-            title = commits[0].get("message", "").split('\n')[0] if commits else f"Activity: {raw_type}"
-
-            activity_feed.append({
-                "id": event.get("id"),
-                "type": raw_type,
-                "author": pusher_login,
-                "date": event.get("created_at"),
-                "title": title,
-                "sha": sha,
-                "repo_full": f"{owner}/{repo}"
-            })
-
-            if len(activity_feed) >= 50:
-                break
-
-        return activity_feed
-    @staticmethod
     def get_contributors(owner, repo, limit=None):
         url = f"https://api.github.com/repos/{owner}/{repo}/contributors"
         if limit:
