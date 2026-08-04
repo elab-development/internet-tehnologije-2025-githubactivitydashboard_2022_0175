@@ -44,3 +44,4 @@ def get_history(user_id):
     # Za sada dozvoljavamo preko ID-a, kasnije ćemo dodati pravu zaštitu
     history = SearchService.get_user_history(user_id)
     return jsonify(search_histories_schema.dump(history)), 200
+
