@@ -1,14 +1,15 @@
-from app_models.models import ma, Repository
+from app_models.models import db, ma, Repository
 
-class RepositorySchema(ma.Schema):
+
+# SQLAlchemyAutoSchema (umesto ma.Schema) - kod obicnog Schema
+# opcije model i load_instance se tiho ignorisu, pa nisu ni radile
+class RepositorySchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        # Povezujemo sa modelom iz app_models.py
         model = Repository
-        # load_instance=True omogućava da Marshmallow kreira Repository objekat
-        # direktno iz JSON-a, što je super za "update" ili "create" operacije
         load_instance = True
-        # Polja koja šalješ ka React-u (tvoj DTO)
+        sqla_session = db.session
         fields = ("repo_id", "full_name", "url", "last_synced_at")
+
 
 repository_schema = RepositorySchema()
 repositories_schema = RepositorySchema(many=True)
