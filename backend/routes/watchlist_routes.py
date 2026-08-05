@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from services.repository_service import RepositoryService
 from schemas.repository_schema import repositories_schema
+from services.telegram_service import TelegramService
 
 watchlist_bp = Blueprint('watchlist_bp', __name__)
 
@@ -25,6 +26,13 @@ def follow_repo():
         return jsonify({"error": "Missing data"}), 400
 
     res, status = RepositoryService.follow_repository(data['user_id'], data['repo_data'])
+
+    # Slanje Telegram notifikacije pri uspešnom dodavanju
+    if status == 200 or status == 201:
+        repo_name = data['repo_data'].get('full_name', 'Nepoznat repozitorijum')
+        TelegramService.send_notification(
+            f"⭐ *Novi repozitorijum u Watchlist-i!*\nKorisnik je zapratio: `{repo_name}`")
+
     return jsonify(res), status
 
 
