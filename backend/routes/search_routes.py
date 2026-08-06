@@ -9,6 +9,55 @@ search_bp = Blueprint('search', __name__)
 
 @search_bp.route('/api/search/repositories', methods=['POST']) # Endpoint koji prima POST zahtev sa terminom pretrage.
 def search_repos():
+    """
+    Pretraga GitHub korisnika po korisničkom imenu
+    ---
+    tags:
+      - Search
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required: [query]
+          properties:
+            query:
+              type: string
+              description: GitHub korisničko ime koje se pretražuje
+              example: octocat
+            user_id:
+              type: integer
+              description: ID ulogovanog korisnika (opciono, radi logovanja pretrage)
+              example: 1
+    responses:
+      200:
+        description: Podaci o pronađenom GitHub korisniku
+        schema:
+          type: object
+          properties:
+            avatar_url:
+              type: string
+            login:
+              type: string
+            public_repos:
+              type: integer
+            followers:
+              type: integer
+            following:
+              type: integer
+            public_gists:
+              type: integer
+            repos_list:
+              type: array
+              items:
+                type: object
+            type:
+              type: string
+              example: user
+      404:
+        description: Korisnik ne postoji na GitHub-u
+    """
     data = request.json # Preuzima podatke sa frontenda (query i user_id).
     query = data.get('query') # To je username koji korisnik kuca u search bar.
     user_id = data.get('user_id') # ID ulogovanog korisnika (ako postoji).
@@ -40,6 +89,36 @@ def search_repos():
 
 @search_bp.route('/api/search/history/<int:user_id>', methods=['GET'])
 def get_history(user_id):
+    """
+    Istorija pretraga za konkretnog korisnika
+    ---
+    tags:
+      - Search
+    parameters:
+      - name: user_id
+        in: path
+        type: integer
+        required: true
+        description: ID korisnika čija se istorija pretraga vraća
+    responses:
+      200:
+        description: Lista prethodnih pretraga korisnika
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              search_id:
+                type: integer
+              query:
+                type: string
+              search_type:
+                type: string
+              timestamp:
+                type: string
+              user_id:
+                type: integer
+    """
     # Zahtev: "Pristup pojedinim rutama omogućen samo autentifikovanim korisnicima"
     # Za sada dozvoljavamo preko ID-a, kasnije ćemo dodati pravu zaštitu
     history = SearchService.get_user_history(user_id)
