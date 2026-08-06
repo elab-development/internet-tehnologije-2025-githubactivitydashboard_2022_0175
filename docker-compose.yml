@@ -15,6 +15,8 @@ services:
     build: ./backend
     container_name: github_dashboard_backend
     env_file: ./backend/.env  # <--- OVA LINIJA JE KLJUČNA!
+    environment:
+      DATABASE_URL: postgresql://elab_user:elab_password@db:5432/github_stats
     ports:
       - "5000:5000"
     volumes:
