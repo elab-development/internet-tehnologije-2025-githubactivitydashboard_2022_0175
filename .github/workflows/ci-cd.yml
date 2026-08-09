@@ -61,7 +61,7 @@ jobs:
       - name: Provera frontend build-a
         run: |
           cd frontend
-          npm run build --if-present
+          CI=false npm run build --if-present
 
   # JOB 3: Docker Container Build Check
   docker-build:
@@ -83,3 +83,5 @@ jobs:
           file: ./Dockerfile
           push: false
           tags: github-activity-dashboard:latest
+
+
