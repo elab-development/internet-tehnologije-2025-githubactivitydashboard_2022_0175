@@ -7,7 +7,7 @@ const SearchHistory = ({ userId }) => {
 
   useEffect(() => {
     if (userId) {
-      fetch(`http://localhost:5000/api/history?user_id=${userId}`)
+      fetch(`http://localhost:5000/api/search/history/${userId}`)
         .then(res => res.json())
         .then(data => setHistory(data))
         .catch(err => console.error("Greška pri učitavanju istorije:", err));

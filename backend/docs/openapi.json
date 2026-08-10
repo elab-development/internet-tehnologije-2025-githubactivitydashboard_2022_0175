@@ -1,0 +1,795 @@
+{
+  "basePath": "/",
+  "definitions": {},
+  "info": {
+    "description": "REST API za pretragu GitHub korisnika i repozitorijuma, praćenje (watchlist) repozitorijuma i pregled aktivnosti (commits, issues, itd.).",
+    "title": "GitHub Activity Dashboard API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/activity/details/{owner}/{repo}/{sha}": {
+      "get": {
+        "parameters": [
+          {
+            "example": "facebook",
+            "in": "path",
+            "name": "owner",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": "react",
+            "in": "path",
+            "name": "repo",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "SHA hash commit-a",
+            "in": "path",
+            "name": "sha",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalji commit-a",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "404": {
+            "description": "Commit nije pronađen"
+          }
+        },
+        "summary": "Detalji o pojedinačnom commit-u",
+        "tags": [
+          "Activity"
+        ]
+      }
+    },
+    "/api/activity/list": {
+      "post": {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "author_filter": {
+                  "description": "Filter po autoru događaja",
+                  "example": "",
+                  "type": "string"
+                },
+                "filter": {
+                  "description": "Filter po tipu događaja",
+                  "example": "All",
+                  "type": "string"
+                },
+                "owner": {
+                  "example": "facebook",
+                  "type": "string"
+                },
+                "repo": {
+                  "example": "react",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "owner",
+                "repo"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista aktivnosti",
+            "schema": {
+              "items": {
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "500": {
+            "description": "Greška na serveru"
+          },
+          "502": {
+            "description": "Greška prilikom komunikacije sa GitHub API-jem"
+          }
+        },
+        "summary": "Lista aktivnosti (događaja) za repozitorijum, uživo sa GitHub-a",
+        "tags": [
+          "Activity"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "password": {
+                  "example": "lozinka123",
+                  "type": "string"
+                },
+                "username": {
+                  "example": "Anja",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "username",
+                "password"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Uspešna prijava",
+            "schema": {
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string"
+                },
+                "user_id": {
+                  "type": "integer"
+                },
+                "username": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "401": {
+            "description": "Pogrešno korisničko ime ili lozinka"
+          }
+        },
+        "summary": "Prijava korisnika",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "email": {
+                  "example": "anja@example.com",
+                  "type": "string"
+                },
+                "password": {
+                  "example": "lozinka123",
+                  "type": "string"
+                },
+                "username": {
+                  "example": "Anja",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "username",
+                "email",
+                "password"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Korisnik uspešno registrovan",
+            "schema": {
+              "properties": {
+                "email": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string"
+                },
+                "user_id": {
+                  "type": "integer"
+                },
+                "username": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Nedostaju podaci ili korisničko ime/email već postoji"
+          }
+        },
+        "summary": "Registracija novog korisnika",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/contributors/{owner}/{repo_name}": {
+      "get": {
+        "parameters": [
+          {
+            "example": "facebook",
+            "in": "path",
+            "name": "owner",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": "react",
+            "in": "path",
+            "name": "repo_name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ograničava broj vraćenih kontributora",
+            "example": 3,
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista kontributora (ili poruka ako ih nema)",
+            "schema": {
+              "items": {
+                "type": "object"
+              },
+              "type": "array"
+            }
+          }
+        },
+        "summary": "Lista kontributora repozitorijuma",
+        "tags": [
+          "Repository"
+        ]
+      }
+    },
+    "/api/following": {
+      "get": {
+        "parameters": [
+          {
+            "description": "ID korisnika",
+            "in": "query",
+            "name": "user_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista praćenih repozitorijuma",
+            "schema": {
+              "items": {
+                "properties": {
+                  "full_name": {
+                    "type": "string"
+                  },
+                  "repo_id": {
+                    "type": "integer"
+                  },
+                  "url": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "400": {
+            "description": "user_id nije prosleđen"
+          }
+        },
+        "summary": "Lista repozitorijuma koje korisnik prati",
+        "tags": [
+          "Watchlist"
+        ]
+      }
+    },
+    "/api/history": {
+      "get": {
+        "parameters": [
+          {
+            "description": "ID korisnika",
+            "in": "query",
+            "name": "user_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista pretraga korisnika",
+            "schema": {
+              "items": {
+                "properties": {
+                  "query": {
+                    "type": "string"
+                  },
+                  "timestamp": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "400": {
+            "description": "user_id nije prosleđen"
+          }
+        },
+        "summary": "Istorija pretraga korisnika (preko query parametra)",
+        "tags": [
+          "Watchlist"
+        ]
+      }
+    },
+    "/api/repository/details": {
+      "post": {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "url": {
+                  "description": "Puno ime repozitorijuma (owner/repo) ili URL",
+                  "example": "facebook/react",
+                  "type": "string"
+                },
+                "user_id": {
+                  "description": "ID ulogovanog korisnika (opciono, radi logovanja)",
+                  "example": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "url"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Podaci o repozitorijumu i status logovanja u bazu",
+            "schema": {
+              "properties": {
+                "db_status": {
+                  "type": "string"
+                },
+                "repo_data": {
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "URL nije prosleđen"
+          },
+          "404": {
+            "description": "Repozitorijum nije pronađen na GitHub-u"
+          },
+          "500": {
+            "description": "Greška na serveru"
+          }
+        },
+        "summary": "Detalji repozitorijuma (uživo sa GitHub-a), sa opcionim logovanjem pretrage",
+        "tags": [
+          "Activity"
+        ]
+      }
+    },
+    "/api/repository/{owner}/{repo_name}": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Vlasnik repozitorijuma",
+            "example": "facebook",
+            "in": "path",
+            "name": "owner",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Naziv repozitorijuma",
+            "example": "react",
+            "in": "path",
+            "name": "repo_name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Podaci o repozitorijumu",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "404": {
+            "description": "Repozitorijum nije pronađen"
+          }
+        },
+        "summary": "Detalji o repozitorijumu sa GitHub-a",
+        "tags": [
+          "Repository"
+        ]
+      }
+    },
+    "/api/search/history/{user_id}": {
+      "get": {
+        "parameters": [
+          {
+            "description": "ID korisnika čija se istorija pretraga vraća",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista prethodnih pretraga korisnika",
+            "schema": {
+              "items": {
+                "properties": {
+                  "query": {
+                    "type": "string"
+                  },
+                  "search_id": {
+                    "type": "integer"
+                  },
+                  "search_type": {
+                    "type": "string"
+                  },
+                  "timestamp": {
+                    "type": "string"
+                  },
+                  "user_id": {
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          }
+        },
+        "summary": "Istorija pretraga za konkretnog korisnika",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/api/search/repositories": {
+      "post": {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "query": {
+                  "description": "GitHub korisničko ime koje se pretražuje",
+                  "example": "octocat",
+                  "type": "string"
+                },
+                "user_id": {
+                  "description": "ID ulogovanog korisnika (opciono, radi logovanja pretrage)",
+                  "example": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Podaci o pronađenom GitHub korisniku",
+            "schema": {
+              "properties": {
+                "avatar_url": {
+                  "type": "string"
+                },
+                "followers": {
+                  "type": "integer"
+                },
+                "following": {
+                  "type": "integer"
+                },
+                "login": {
+                  "type": "string"
+                },
+                "public_gists": {
+                  "type": "integer"
+                },
+                "public_repos": {
+                  "type": "integer"
+                },
+                "repos_list": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "type": {
+                  "example": "user",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "404": {
+            "description": "Korisnik ne postoji na GitHub-u"
+          }
+        },
+        "summary": "Pretraga GitHub korisnika po korisničkom imenu",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/api/users": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Lista korisnika",
+            "schema": {
+              "items": {
+                "properties": {
+                  "id": {
+                    "example": 1,
+                    "type": "integer"
+                  },
+                  "role": {
+                    "example": "Admin",
+                    "type": "string"
+                  },
+                  "username": {
+                    "example": "Anja",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          }
+        },
+        "summary": "Vraća listu svih korisnika",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/users/{user_id}": {
+      "delete": {
+        "parameters": [
+          {
+            "description": "ID korisnika koji se briše",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Korisnik uspešno obrisan"
+          },
+          "403": {
+            "description": "Pokušaj brisanja glavnog admina (Anja/Una) - zabranjeno"
+          },
+          "404": {
+            "description": "Korisnik nije pronađen"
+          },
+          "500": {
+            "description": "Greška na serveru"
+          }
+        },
+        "summary": "Briše korisnika po ID-u",
+        "tags": [
+          "Users"
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "description": "ID korisnika koji se menja",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "username": {
+                  "example": "NovoIme",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ime uspešno promenjeno"
+          },
+          "400": {
+            "description": "Korisničko ime je već zauzeto"
+          },
+          "404": {
+            "description": "Korisnik nije pronađen"
+          },
+          "500": {
+            "description": "Greška na serveru"
+          }
+        },
+        "summary": "Ažurira korisničko ime",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/watchlist/follow": {
+      "post": {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "repo_data": {
+                  "description": "GitHub podaci o repozitorijumu (mora sadržati full_name i html_url)",
+                  "properties": {
+                    "full_name": {
+                      "example": "facebook/react",
+                      "type": "string"
+                    },
+                    "html_url": {
+                      "example": "https://github.com/facebook/react",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "user_id": {
+                  "example": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "user_id",
+                "repo_data"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Repozitorijum uspešno dodat u praćene"
+          },
+          "400": {
+            "description": "Nedostaju podaci"
+          }
+        },
+        "summary": "Dodaje repozitorijum u listu praćenih",
+        "tags": [
+          "Watchlist"
+        ]
+      }
+    },
+    "/api/watchlist/unfollow": {
+      "delete": {
+        "parameters": [
+          {
+            "description": "ID korisnika",
+            "in": "query",
+            "name": "user_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "description": "ID ili puno ime repozitorijuma koji se uklanja",
+            "in": "query",
+            "name": "repo_id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Uspešno uklonjeno iz praćenih"
+          },
+          "400": {
+            "description": "Nedostaju parametri"
+          },
+          "404": {
+            "description": "Repozitorijum nije pronađen u praćenima"
+          }
+        },
+        "summary": "Uklanja repozitorijum iz liste praćenih",
+        "tags": [
+          "Watchlist"
+        ]
+      }
+    }
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "swagger": "2.0",
+  "tags": [
+    {
+      "description": "Registracija i prijava korisnika",
+      "name": "Auth"
+    },
+    {
+      "description": "Upravljanje korisnicima (admin)",
+      "name": "Users"
+    },
+    {
+      "description": "Pretraga GitHub korisnika i istorija pretraga",
+      "name": "Search"
+    },
+    {
+      "description": "Podaci o repozitorijumima i kontributorima",
+      "name": "Repository"
+    },
+    {
+      "description": "Praćeni (followed) repozitorijumi",
+      "name": "Watchlist"
+    },
+    {
+      "description": "Aktivnosti (događaji) na repozitorijumima",
+      "name": "Activity"
+    }
+  ]
+}
