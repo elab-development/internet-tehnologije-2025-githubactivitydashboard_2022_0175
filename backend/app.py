@@ -34,8 +34,12 @@ CORS(app, resources={r"/*": {
 bcrypt = Bcrypt(app)
 
 # 2. KONFIGURACIJA
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
-    'DATABASE_URL','postgresql://elab_user:elab_password@localhost:5432/github_stats')
+# DATABASE_URL env promenljiva omogućava da se u testovima (i lokalno) koristi
+# npr. SQLite baza umesto prave Postgres baze, bez menjanja produkcionog ponašanja
+# (kad DATABASE_URL nije podešen, koristi se ista Postgres konekcija kao i do sada).
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+    'DATABASE_URL', 'postgresql://elab_user:elab_password@db:5432/github_stats'
+)
 #bkv gps do naseg servera, govori Flasku gde se nalazi nasa baza i kako da udjemo u nju
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 #omogucava brzi rad baze
