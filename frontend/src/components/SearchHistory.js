@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { API_URL } from '../config';
 const SearchHistory = ({ userId }) => {
   const [history, setHistory] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (userId) {
-      fetch(`http://localhost:5000/api/search/history/${userId}`)
+      fetch(`${API_URL}/api/search/history/${userId}`)
         .then(res => res.json())
         .then(data => setHistory(data))
         .catch(err => console.error("Greška pri učitavanju istorije:", err));

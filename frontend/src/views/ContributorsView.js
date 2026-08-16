@@ -10,6 +10,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import {API_URL} from "../config";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -26,7 +27,7 @@ const ContributorsView = () => {
       setLoading(true);
       try {
         // Pozivamo backend samo za commit-ove
-        const res = await fetch(`http://localhost:5000/api/contributors/${owner}/${repo}?type=commits`);
+        const res = await fetch(`${API_URL}/api/contributors/${owner}/${repo}?type=commits`);
         if (res.ok) {
           const data = await res.json();
           setContributors(Array.isArray(data) ? data : []);

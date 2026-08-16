@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { API_URL } from '../config';
 const SearchBox = ({ username, setUsername }) => {
   const navigate = useNavigate();
 

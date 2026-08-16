@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-
+import { API_URL } from '../config';
 const UserTable = () => {
     const [users, setUsers] = useState([]);
 
     const fetchUsers = () => {
         // PROMENA 1: Koristi localhost (standardnije za browser)
-        fetch('http://localhost:5000/api/users')
+        fetch(`${API_URL}/api/users`)
             .then(res => res.json())
             .then(data => {
                 if(Array.isArray(data)) setUsers(data);
@@ -22,7 +22,7 @@ const UserTable = () => {
         if (window.confirm(`Are you sure you want to remove user: ${username}?`)) {
             try {
                 // Koristimo localhost:5000 jer je to standard za Docker/Flask komunikaciju
-                const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
+                const response = await fetch(`${API_URL}/api/users/${userId}`, {
                     method: 'DELETE',
                 });
 
