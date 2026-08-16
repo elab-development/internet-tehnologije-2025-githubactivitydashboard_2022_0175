@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_bcrypt import Bcrypt
+from flasgger import Swagger
 
 # Dodajemo putanju do backend foldera
 sys.path.append(os.path.abspath(os.path.dirname(__file__))) #osigurava da Python vidi sve moje foldere,
@@ -32,6 +33,40 @@ CORS(app, resources={r"/*": {
 #
 # Ako nema nalepnice (ili je pogrešna), Flask se zbuni. Može da pomisli da je unutra običan tekst ili slika, i onda neće znati da izvuče username i password. Rezultat? Aplikacija izbaci grešku.
 bcrypt = Bcrypt(app)
+
+# Swagger / OpenAPI dokumentacija
+# Flasgger čita YAML docstringove iz svake rute i od njih automatski
+# generiše OpenAPI (Swagger) specifikaciju.
+# Nakon pokretanja servera, specifikacija je dostupna na:
+#   - Swagger UI:      http://localhost:5000/apidocs
+#   - Raw JSON spec:    http://localhost:5000/apispec_1.json
+app.config['SWAGGER'] = {
+    'title': 'GitHub Activity Dashboard API',
+    'uiversion': 3,
+    'specs_route': '/apidocs/'
+}
+
+swagger_template = {
+    "swagger": "2.0",
+    "info": {
+        "title": "GitHub Activity Dashboard API",
+        "description": "REST API za pretragu GitHub korisnika i repozitorijuma, "
+                       "praćenje (watchlist) repozitorijuma i pregled aktivnosti (commits, issues, itd.).",
+        "version": "1.0.0"
+    },
+    "basePath": "/",
+    "schemes": ["http", "https"],
+    "tags": [
+        {"name": "Auth", "description": "Registracija i prijava korisnika"},
+        {"name": "Users", "description": "Upravljanje korisnicima (admin)"},
+        {"name": "Search", "description": "Pretraga GitHub korisnika i istorija pretraga"},
+        {"name": "Repository", "description": "Podaci o repozitorijumima i kontributorima"},
+        {"name": "Watchlist", "description": "Praćeni (followed) repozitorijumi"},
+        {"name": "Activity", "description": "Aktivnosti (događaji) na repozitorijumima"}
+    ]
+}
+
+swagger = Swagger(app, template=swagger_template)
 
 # 2. KONFIGURACIJA
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
@@ -86,6 +121,29 @@ def dodaj_nas():
 
 @app.route('/api/users', methods=['GET'])
 def get_users():
+    """
+    Vraća listu svih korisnika
+    ---
+    tags:
+      - Users
+    responses:
+      200:
+        description: Lista korisnika
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1
+              username:
+                type: string
+                example: Anja
+              role:
+                type: string
+                example: Admin
+    """
     users = User.query.all() #uzmi sve zapise iz tabele User
     #biramo informacije koje ce se prikazati
     user_list = [{"id": u.user_id, "username": u.username, "role": u.role} for u in users]
@@ -93,6 +151,27 @@ def get_users():
 
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
+    """
+    Briše korisnika po ID-u
+    ---
+    tags:
+      - Users
+    parameters:
+      - name: user_id
+        in: path
+        type: integer
+        required: true
+        description: ID korisnika koji se briše
+    responses:
+      200:
+        description: Korisnik uspešno obrisan
+      403:
+        description: Pokušaj brisanja glavnog admina (Anja/Una) - zabranjeno
+      404:
+        description: Korisnik nije pronađen
+      500:
+        description: Greška na serveru
+    """
     try:
         # pokusaj u bazi da pronadjes user-a
         user = User.query.get(user_id)
@@ -109,6 +188,36 @@ def delete_user(user_id):
 
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
+    """
+    Ažurira korisničko ime
+    ---
+    tags:
+      - Users
+    parameters:
+      - name: user_id
+        in: path
+        type: integer
+        required: true
+        description: ID korisnika koji se menja
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            username:
+              type: string
+              example: NovoIme
+    responses:
+      200:
+        description: Ime uspešno promenjeno
+      400:
+        description: Korisničko ime je već zauzeto
+      404:
+        description: Korisnik nije pronađen
+      500:
+        description: Greška na serveru
+    """
     try:
         user = User.query.get(user_id)
         if not user:
@@ -134,9 +243,4 @@ def update_user(user_id):
 
 
 if __name__ == '__main__':
-     app.run(host="0.0.0.0", port=5000, debug=True)
-# Zašto za Docker: Pošto tvoj React frontend i Flask backend žive
-# u odvojenim kontejnerima (kao u odvojenim stanovima), ako bi ovde
-# pisalo 127.0.0.1 (localhost), Docker kontejneri ne bi mogli da "vide"
-# jedan drugog. 0.0.0.0 im omogućava da komuniciraju.
-
+    app.run(host="0.0.0.0", port=5000, debug=True)
