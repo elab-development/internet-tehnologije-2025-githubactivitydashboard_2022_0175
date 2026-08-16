@@ -5,8 +5,7 @@ from services.telegram_service import TelegramService
 
 watchlist_bp = Blueprint('watchlist_bp', __name__)
 
-<<<<<<< Updated upstream
-=======
+
 # --- 1. MY HISTORY (Sve pretrage iz baze) ---
 @watchlist_bp.route('/api/history', methods=['GET'])
 def get_my_history():
@@ -39,14 +38,15 @@ def get_my_history():
         description: user_id nije prosleđen
     """
     user_id = request.args.get('user_id')
->>>>>>> Stashed changes
+    if not user_id:
+        return jsonify({"error": "user_id is required"}), 400
+
+    # Ako je u servisu postoji metoda za istoriju, poziva se ovde (ili prilagodi po potrebi)
+    return jsonify([]), 200
+
 
 @watchlist_bp.route('/api/following', methods=['GET'])
 def get_following_list():
-<<<<<<< Updated upstream
-    """Vraca repozitorijume koje je korisnik zapratio."""
-    user_id = request.args.get('user_id', type=int)
-=======
     """
     Lista repozitorijuma koje korisnik prati
     ---
@@ -75,8 +75,7 @@ def get_following_list():
       400:
         description: user_id nije prosleđen
     """
-    user_id = request.args.get('user_id')
->>>>>>> Stashed changes
+    user_id = request.args.get('user_id', type=int)
 
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
@@ -87,9 +86,6 @@ def get_following_list():
 
 @watchlist_bp.route('/api/watchlist/follow', methods=['POST'])
 def follow_repo():
-<<<<<<< Updated upstream
-    """Dodaje repozitorijum u listu pracenih."""
-=======
     """
     Dodaje repozitorijum u listu praćenih
     ---
@@ -122,7 +118,6 @@ def follow_repo():
       400:
         description: Nedostaju podaci
     """
->>>>>>> Stashed changes
     data = request.json
     if not data or 'user_id' not in data or 'repo_data' not in data:
         return jsonify({"error": "Missing data"}), 400
@@ -174,9 +169,4 @@ def unfollow_repo():
 
     if success:
         return jsonify({"message": "Successfully removed"}), 200
-<<<<<<< Updated upstream
     return jsonify({"error": "Not found in following list"}), 404
-=======
-    else:
-        return jsonify({"error": "Not found in following list"}), 404
->>>>>>> Stashed changes
