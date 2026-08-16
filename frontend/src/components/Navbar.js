@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_URL } from '../config';
 
 // Dodajemo userRole u listu argumenata (prop)
 const Navbar = ({ isInApp, handleLogout, userRole }) => {

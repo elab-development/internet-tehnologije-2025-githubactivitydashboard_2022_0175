@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import InfoCard from '../InfoCard';
-
+import { API_URL } from '../config';
 const UserResults = ({ githubData }) => {
   const navigate = useNavigate();
 

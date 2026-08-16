@@ -7,7 +7,7 @@ const AdminView = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/users');
+      const res = await fetch(API_URL);
       if (res.ok) {
         const data = await res.json();
         setUsers(data);
