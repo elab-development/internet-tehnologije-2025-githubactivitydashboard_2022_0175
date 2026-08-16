@@ -10,6 +10,7 @@ const UserView = ({ currentUserId }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+      console.log("Trenutni API_URL je:", API_URL); //
     const fetchUserData = async () => {
       setLoading(true);
       try {
