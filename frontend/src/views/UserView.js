@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import UserResults from '../components/UserResults';
+import {API_URL} from "../config";
 
 const UserView = ({ currentUserId }) => {
   const { username } = useParams();
@@ -12,7 +13,7 @@ const UserView = ({ currentUserId }) => {
     const fetchUserData = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`http://localhost:5000/api/search/repositories`, {
+        const response = await fetch(`${API_URL}/api/search/repositories`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

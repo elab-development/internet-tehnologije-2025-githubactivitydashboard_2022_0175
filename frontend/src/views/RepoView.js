@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link} from 'react-router-dom';
 import UserResults from '../components/UserResults';
 import ActivityFeed from '../components/ActivityFeed';
 import ActivityDetails from '../components/ActivityDetails';
+import {API_URL} from "../config";
 
 const RepoView = ({ currentUserId }) => {
   const { owner, repo } = useParams();
@@ -35,7 +36,7 @@ const RepoView = ({ currentUserId }) => {
   useEffect(() => {
     const fetchTopContributors = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/contributors/${owner}/${repo}?limit=4`);
+        const res = await fetch(`${API_URL}/api/contributors/${owner}/${repo}?limit=4`);
         if (res.ok) {
           const data = await res.json();
           setTopContributors(data);
@@ -52,7 +53,7 @@ const RepoView = ({ currentUserId }) => {
     const checkFollowing = async () => {
       if (!currentUserId || !repo) return;
       try {
-        const res = await fetch(`http://localhost:5000/api/following?user_id=${currentUserId}`);
+        const res = await fetch(`${API_URL}/api/following?user_id=${currentUserId}`);
         const data = await res.json();
         if (res.ok) {
           // Proveravamo da li se trenutni repo (owner/repo) nalazi u listi
@@ -77,7 +78,7 @@ const RepoView = ({ currentUserId }) => {
       setLoading(true);
       try {
         // A) Detalji o repozitorijumu
-        const res = await fetch('http://localhost:5000/api/repository/details', {
+        const res = await fetch(`${API_URL}/api/repository/details`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: `${owner}/${repo}`, user_id: currentUserId })
@@ -97,7 +98,7 @@ const RepoView = ({ currentUserId }) => {
         });
 
         // B) Povlačimo SVE aktivnosti
-        const actRes = await fetch('http://localhost:5000/api/activity/list', {
+        const actRes = await fetch(`${API_URL}/api/activity/list`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -146,7 +147,7 @@ const RepoView = ({ currentUserId }) => {
 
   const handleActivityClick = async (owner, repo, sha) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/activity/details/${owner}/${repo}/${sha}`);
+      const response = await fetch(`${API_URL}/api/activity/details/${owner}/${repo}/${sha}`);
       const data = await response.json();
       if (response.ok) {
         setSelectedActivity(data);
@@ -168,7 +169,7 @@ const RepoView = ({ currentUserId }) => {
          // 2. Čak i ako githubData još nije učitan, owner i repo iz URL-a jesu!
          const repoFullName = `${owner}/${repo}`;
 
-         const response = await fetch(`http://localhost:5000/api/watchlist/follow`, {
+         const response = await fetch(`${API_URL}/api/watchlist/follow`, {
              method: 'POST',
              headers: { 'Content-Type': 'application/json' },
              body: JSON.stringify({

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import {API_URL} from "../config";
 
 const AdminView = () => {
   const [users, setUsers] = useState([]);
@@ -26,7 +27,7 @@ const AdminView = () => {
     if (!newName || newName === oldName) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/users/${userId}`, {
+      const res = await fetch(`${API_URL}/api/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: newName })
@@ -42,7 +43,7 @@ const AdminView = () => {
     }
     if (window.confirm(`Delete account "${username}"? This cannot be undone.`)) {
       try {
-        const res = await fetch(`http://localhost:5000/api/users/${userId}`, { method: 'DELETE' });
+        const res = await fetch(`${API_URL}/api/users/${userId}`, { method: 'DELETE' });
         if (res.ok) fetchUsers();
       } catch (e) { console.error(e); }
     }
