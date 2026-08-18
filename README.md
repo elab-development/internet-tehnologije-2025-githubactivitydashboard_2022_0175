@@ -27,7 +27,7 @@ Web aplikacija za prikupljanje, analizu i vizuelni prikaz aktivnosti GitHub kori
 
 ## Struktura projekta
 
-```
+```text
 ├── backend/          # Flask REST API (routes, services, schemas, app_models)
 ├── frontend/         # React aplikacija
 └── docker-compose.yml
@@ -42,7 +42,7 @@ Web aplikacija za prikupljanje, analizu i vizuelni prikaz aktivnosti GitHub kori
 
 Pre pokretanja kreirati fajl `backend/.env` sa sadržajem:
 
-```
+```env
 GITHUB_TOKEN=vas_github_token
 ```
 
@@ -52,7 +52,7 @@ Fajl `.env` je isključen iz verzionisanja (`.gitignore`) i token se ne čuva u 
 
 Iz root foldera projekta:
 
-```
+```bash
 docker-compose up --build
 ```
 
@@ -69,7 +69,7 @@ Zaustavljanje: `Ctrl+C`, odnosno `docker-compose down`.
 
 Najjednostavnije je pokrenuti samo bazu iz docker-compose-a:
 
-```
+```bash
 docker-compose up db
 ```
 
@@ -77,7 +77,7 @@ Alternativno se može koristiti lokalna PostgreSQL instalacija, uz odgovarajuću
 
 ### 2. Backend (novi terminal)
 
-```
+```bash
 cd backend
 python -m venv venv
 venv\Scripts\activate        # Windows (Linux/macOS: source venv/bin/activate)
@@ -89,7 +89,7 @@ Backend se pokreće na http://localhost:5000. Konekcija na bazu se čita iz prom
 
 ### 3. Frontend (novi terminal)
 
-```
+```bash
 cd frontend
 npm install
 npm start
@@ -97,7 +97,11 @@ npm start
 
 Frontend se pokreće na http://localhost:3000.
 
+## Bezbednost
+
+Aplikacija uključuje osnovne zaštitne mehanizme: zaštitu od SQL injection napada (Flask-SQLAlchemy ORM i parametrizovani upiti), zaštitu od XSS-a (React JSX auto-escaping i sanitizacija unosa), restriktivno konfigurisan CORS (dozvoljeni domeni, metode i zaglavlja), kao i čuvanje svih tajni (API ključevi, lozinke baze, JWT tajna) isključivo kroz promenljive okruženja.
+
 ## Autori
 
-- Una Stanković 2022/0328
+- Una Stanković 0328/2022
 - Anja Stanišić 0175/2022
