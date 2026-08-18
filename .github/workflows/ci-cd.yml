@@ -1,4 +1,4 @@
-name: GitHub Activity Dashboard CI Pipeline
+name: GitHub Activity Dashboard CI/CD Pipeline
 
 on:
   push:
@@ -6,7 +6,6 @@ on:
       - main
       - develop
       - 'feature/**'
-      - 'fix/**'
   pull_request:
     branches:
       - main
@@ -31,7 +30,7 @@ jobs:
       - name: Instalacija backend zavisnosti
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
 
       - name: Pokretanje pytest testova
         run: |
@@ -84,3 +83,19 @@ jobs:
           file: ./Dockerfile
           push: false
           tags: github-activity-dashboard:latest
+
+  # JOB 4: Continuous Deployment na Render Cloud
+  deploy:
+    name: Deploy to Render Cloud
+    needs: docker-build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Render Backend Deployment
+        run: |
+          curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
+
+      - name: Trigger Render Frontend Deployment
+        run: |
+          curl -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}"
