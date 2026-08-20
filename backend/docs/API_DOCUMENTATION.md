@@ -54,7 +54,7 @@ pokretanjem aplikacije i preuzimanjem sadržaja sa `/apispec_1.json`.
 
 ## Implementacija
 
-- Biblioteka: `flasgger==0.9.7.1` (dodata u `requirements.txt`).
+- Biblioteka: `flasgger==0.9.7.1` (dodata u `../requirements.txt`).
 - Inicijalizacija: `backend/app.py`, gde je definisan `swagger_template`
   (naslov, opis, verzija, tagovi) i pozvano `Swagger(app, template=swagger_template)`.
 - Svaka ruta u `backend/routes/*.py` i u `backend/app.py` ima YAML docstring
