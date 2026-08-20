@@ -1,4 +1,4 @@
-name: GitHub Activity Dashboard CI Pipeline
+name: GitHub Activity Dashboard CI/CD Pipeline
 
 on:
   push:
@@ -37,9 +37,9 @@ jobs:
           cd backend
           python -m pytest -v
 
-  # JOB 2: Frontend CI (Build check)
+    # JOB 2: Frontend CI (Unit/Component tests, E2E tests, Build check)
   frontend-ci:
-    name: Frontend Build Check
+    name: Frontend Tests & Build
     runs-on: ubuntu-latest
 
     steps:
@@ -56,12 +56,35 @@ jobs:
       - name: Instalacija frontend zavisnosti
         run: |
           cd frontend
-          npm install
+          npm ci
+
+      - name: Pokretanje Jest unit i komponentnih testova
+        run: |
+          cd frontend
+          CI=true npm test -- --watchAll=false
+
+      - name: Instalacija Playwright browsera
+        run: |
+          cd frontend
+          npx playwright install --with-deps chromium
+
+      - name: Pokretanje Playwright E2E testova
+        run: |
+          cd frontend
+          npm run test:e2e
+
+      - name: Čuvanje Playwright izveštaja pri padu
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7
 
       - name: Provera frontend build-a
         run: |
           cd frontend
-          CI=false npm run build --if-present
+          CI=false npm run build
 
   # JOB 3: Docker Container Build Check
   docker-build:
@@ -84,4 +107,18 @@ jobs:
           push: false
           tags: github-activity-dashboard:latest
 
+  # JOB 4: Continuous Deployment na Render Cloud
+  deploy:
+    name: Deploy to Render Cloud
+    needs: docker-build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
 
+    steps:
+      - name: Trigger Render Backend Deployment
+        run: |
+          curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
+
+      - name: Trigger Render Frontend Deployment
+        run: |
+          curl -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}"

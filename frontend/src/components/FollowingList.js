@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../config';
 import { Link } from 'react-router-dom'; // BITNO: Za navigaciju unutar aplikacije
 
 const FollowingList = ({ userId }) => {
@@ -12,7 +13,7 @@ const FollowingList = ({ userId }) => {
             setLoading(true);
             try {
                 // Proveri da li ti je backend ruta tačna
-                const response = await fetch(`http://localhost:5000/api/following?user_id=${userId}`);
+                const response = await fetch(`${API_URL}/api/following?user_id=${userId}`);
 
                 if (response.ok) {
                     const data = await response.json();
@@ -36,7 +37,7 @@ const FollowingList = ({ userId }) => {
 
         try {
             // Pretpostavljam da backend briše preko user_id i repo_id
-            const response = await fetch(`http://localhost:5000/api/watchlist/unfollow?user_id=${userId}&repo_id=${repoId}`, {
+            const response = await fetch(`${API_URL}/api/watchlist/unfollow?user_id=${userId}&repo_id=${repoId}`, {
                 method: 'DELETE'
             });
 
