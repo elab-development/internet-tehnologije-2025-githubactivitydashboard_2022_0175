@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from services.repository_service import RepositoryService
+from services.search_service import SearchService
 from schemas.repository_schema import repositories_schema
 from services.telegram_service import TelegramService
 
@@ -38,13 +39,23 @@ def get_my_history():
         description: user_id nije prosleđen
     """
     user_id = request.args.get('user_id')
+
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
 
-    # Ako je u servisu postoji metoda za istoriju, poziva se ovde (ili prilagodi po potrebi)
-    return jsonify([]), 200
+    history = SearchService.get_user_history(user_id)
+
+    result = []
+    for item in history:
+        result.append({
+            "query": item.query,
+            "type": item.search_type,
+            "timestamp": item.timestamp.strftime("%Y-%m-%d %H:%M:%S") if item.timestamp else None
+        })
+    return jsonify(result), 200
 
 
+# --- 2. FOLLOWING LIST (Samo zapraćeni repozitorijumi) ---
 @watchlist_bp.route('/api/following', methods=['GET'])
 def get_following_list():
     """
@@ -83,6 +94,8 @@ def get_following_list():
     following = RepositoryService.get_user_watchlist(user_id)
     return jsonify(repositories_schema.dump(following)), 200
 
+
+# --- 3. AKCIJE: FOLLOW & UNFOLLOW ---
 
 @watchlist_bp.route('/api/watchlist/follow', methods=['POST'])
 def follow_repo():
@@ -169,4 +182,5 @@ def unfollow_repo():
 
     if success:
         return jsonify({"message": "Successfully removed"}), 200
-    return jsonify({"error": "Not found in following list"}), 404
+    else:
+        return jsonify({"error": "Not found in following list"}), 404
