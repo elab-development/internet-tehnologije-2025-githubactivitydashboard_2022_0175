@@ -81,7 +81,7 @@ Alternativno se može koristiti lokalna PostgreSQL instalacija, uz odgovarajuću
 cd backend
 python -m venv venv
 venv\Scripts\activate        # Windows (Linux/macOS: source venv/bin/activate)
-pip install -r requirements.txt
+pip install -r backend\requirements.txt
 python app.py
 ```
 
