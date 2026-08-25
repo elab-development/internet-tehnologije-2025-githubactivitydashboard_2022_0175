@@ -39,7 +39,34 @@ def get_repo_info(owner, repo_name):
     if not details:
         return jsonify({"error": "Repository not found"}), 404
     return jsonify(details), 200
-
+    
+@repo_bp.route('/api/repository/<owner>/<repo_name>/languages', methods=['GET'])
+def get_repo_languages(owner, repo_name):
+    """
+    Broj bajtova koda po programskom jeziku (za grafikon)
+    ---
+    tags:
+      - Repository
+    parameters:
+      - name: owner
+        in: path
+        type: string
+        required: true
+        example: facebook
+      - name: repo_name
+        in: path
+        type: string
+        required: true
+        example: react
+    responses:
+      200:
+        description: Mapa jezik -> broj bajtova
+        schema:
+          type: object
+          example: {"JavaScript": 1234567, "CSS": 45678}
+    """
+    languages = GitHubService.get_repo_languages(owner, repo_name)
+    return jsonify(languages), 200
 
 @repo_bp.route('/api/contributors/<owner>/<repo_name>', methods=['GET'])
 def get_repo_contributors(owner, repo_name):

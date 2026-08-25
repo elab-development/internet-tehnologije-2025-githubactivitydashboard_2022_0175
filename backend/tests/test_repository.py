@@ -45,3 +45,16 @@ def test_get_contributors_empty(mock_get_contributors, client):
     response = client.get("/api/contributors/facebook/react")
     assert response.status_code == 200
     assert response.get_json() == {"message": "Nema dostupnih contributora"}
+
+@patch("routes.repository_routes.GitHubService.get_repo_languages", return_value={"JavaScript": 1000, "Python": 500})
+def test_get_repo_languages_success(mock_get_languages, client):
+    response = client.get("/api/repository/facebook/react/languages")
+    assert response.status_code == 200
+    assert response.get_json() == {"JavaScript": 1000, "Python": 500}
+
+
+@patch("routes.repository_routes.GitHubService.get_repo_languages", return_value={})
+def test_get_repo_languages_empty(mock_get_languages, client):
+    response = client.get("/api/repository/facebook/react/languages")
+    assert response.status_code == 200
+    assert response.get_json() == {}

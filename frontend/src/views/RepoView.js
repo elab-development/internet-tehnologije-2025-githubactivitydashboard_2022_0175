@@ -4,7 +4,7 @@ import UserResults from '../components/UserResults';
 import ActivityFeed from '../components/ActivityFeed';
 import ActivityDetails from '../components/ActivityDetails';
 import {API_URL} from "../config";
-
+import ActivityCharts from '../components/ActivityCharts';
 const RepoView = ({ currentUserId }) => {
   const { owner, repo } = useParams();
   const navigate = useNavigate();
@@ -257,6 +257,10 @@ const RepoView = ({ currentUserId }) => {
           </div>
         </div>
       )}
+
+      {/* Vizualizacija: udeo tipova aktivnosti + programski jezici repozitorijuma */}
+      <ActivityCharts activities={activities} owner={owner} repo={repo} />
+
 
       {/* FILTERI I FEED */}
       <div style={{ marginTop: '40px' }}>
