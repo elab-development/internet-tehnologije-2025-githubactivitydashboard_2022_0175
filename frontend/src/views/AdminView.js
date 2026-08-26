@@ -1,20 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import {API_URL} from "../config";
+import { API_URL } from "../config";
+import { authFetch } from "../utils/authFetch";
 
 const AdminView = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const fetchUsers = async () => {
     setLoading(true);
+    setErrorMsg('');
     try {
-      const res = await fetch(API_URL);
+      // BAG: ovde je ranije bilo fetch(API_URL), a to gađa koren sajta ("/"),
+      // ne listu korisnika - zato je uvek pisalo "Total Users: 0".
+      const res = await authFetch(`${API_URL}/api/users`);
       if (res.ok) {
         const data = await res.json();
         setUsers(data);
+      } else if (res.status === 401 || res.status === 403) {
+        setErrorMsg('Nemate dozvolu da pristupite ovoj stranici.');
+      } else {
+        setErrorMsg('Greška pri učitavanju korisnika.');
       }
     } catch (e) {
       console.error("Greška:", e);
+      setErrorMsg('Server nije dostupan.');
     } finally {
       setLoading(false);
     }
@@ -27,7 +37,7 @@ const AdminView = () => {
     if (!newName || newName === oldName) return;
 
     try {
-      const res = await fetch(`${API_URL}/api/users/${userId}`, {
+      const res = await authFetch(`${API_URL}/api/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: newName })
@@ -43,7 +53,7 @@ const AdminView = () => {
     }
     if (window.confirm(`Delete account "${username}"? This cannot be undone.`)) {
       try {
-        const res = await fetch(`${API_URL}/api/users/${userId}`, { method: 'DELETE' });
+        const res = await authFetch(`${API_URL}/api/users/${userId}`, { method: 'DELETE' });
         if (res.ok) fetchUsers();
       } catch (e) { console.error(e); }
     }
@@ -52,6 +62,12 @@ const AdminView = () => {
   if (loading) return (
     <div style={{ color: '#89cff0', textAlign: 'center', padding: '100px', letterSpacing: '2px' }}>
       LOADING DATABASE...
+    </div>
+  );
+
+  if (errorMsg) return (
+    <div style={{ color: '#ff4d4d', textAlign: 'center', padding: '100px', letterSpacing: '1px' }}>
+      {errorMsg}
     </div>
   );
 

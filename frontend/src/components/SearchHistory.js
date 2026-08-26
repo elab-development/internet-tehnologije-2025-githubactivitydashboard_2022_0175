@@ -1,16 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
+import { authFetch } from '../utils/authFetch';
 const SearchHistory = ({ userId }) => {
   const [history, setHistory] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (userId) {
-      fetch(`${API_URL}/api/search/history/${userId}`)
-        .then(res => res.json())
-        .then(data => setHistory(data))
-        .catch(err => console.error("Greška pri učitavanju istorije:", err));
+      authFetch(`${API_URL}/api/search/history/${userId}`)
+        .then(async (res) => {
+          const data = await res.json();
+          // Ako je zahtev uspeo, backend vraća niz. Ako nije (npr. istekao token,
+          // 401/403), vraća {"error": "..."} - u tom slučaju ne rušimo .map(),
+          // nego prikazujemo praznu listu.
+          if (res.ok && Array.isArray(data)) {
+            setHistory(data);
+          } else {
+            console.error("Greška pri učitavanju istorije:", data.error || data);
+            setHistory([]);
+          }
+        })
+        .catch(err => {
+          console.error("Greška pri učitavanju istorije:", err);
+          setHistory([]);
+        });
     }
   }, [userId]);
 

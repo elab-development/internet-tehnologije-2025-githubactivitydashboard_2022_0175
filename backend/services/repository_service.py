@@ -39,9 +39,19 @@ class RepositoryService:
     def unfollow_repository(user_id, repo_identifier):
         # 1. Prvo moramo da nađemo repo u bazi preko imena (facebook/react) ili preko GitHub ID-a
         # repo_identifier može biti string 'owner/repo' koji šaljemo sa frontenda
-        repo = Repository.query.filter(
-            (Repository.full_name == repo_identifier) | (Repository.repo_id == repo_identifier)
-        ).first()
+
+        # BAG: repo_identifier stiže iz URL query parametra, pa je UVEK string
+        # (npr. "1"), dok je Repository.repo_id INTEGER kolona u bazi.
+        # Poređenje integer == string PostgreSQL odbija sa greškom ("operator
+        # does not exist: integer = character varying"), pa cela ruta puca sa
+        # 500 pre nego što CORS header stigne da se doda na odgovor - u browseru
+        # se to onda pogrešno vidi kao "CORS policy" greška.
+        # Rešenje: konvertuj u int SAMO ako je repo_identifier zaista numerički string.
+        filters = [Repository.full_name == repo_identifier]
+        if str(repo_identifier).isdigit():
+            filters.append(Repository.repo_id == int(repo_identifier))
+
+        repo = Repository.query.filter(db.or_(*filters)).first()
 
         if not repo:
             return False

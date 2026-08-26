@@ -63,7 +63,16 @@ swagger_template = {
         {"name": "Repository", "description": "Podaci o repozitorijumima i kontributorima"},
         {"name": "Watchlist", "description": "Praćeni (followed) repozitorijumi"},
         {"name": "Activity", "description": "Aktivnosti (događaji) na repozitorijumima"}
-    ]
+    ],
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Unesi 'Bearer <token>' (npr: Bearer eyJhbGciOi...). "
+                            "Token dobijaš iz odgovora na /api/auth/login."
+        }
+    }
 }
 
 swagger = Swagger(app, template=swagger_template)
@@ -78,6 +87,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
 #bkv gps do naseg servera, govori Flasku gde se nalazi nasa baza i kako da udjemo u nju
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 #omogucava brzi rad baze
+
+# Tajni ključ kojim se potpisuju JWT tokeni (login/autorizacija).
+# U produkciji se čita iz env promenljive - OBAVEZNO postaviti u .env!
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-me-please')
 
 # 3. INICIJALIZACIJA
 db.init_app(app) #uzima moj objekat baze db i prikljucuje ga na moju apk app
@@ -94,6 +107,7 @@ from routes.search_routes import search_bp
 from routes.repository_routes import repo_bp
 from routes.watchlist_routes import watchlist_bp
 from routes.activity_routes import activity_bp
+from utils.auth_utils import admin_required
 
 app.register_blueprint(auth_bp) #rute su putanje do funkcija
 app.register_blueprint(search_bp)
@@ -124,12 +138,15 @@ def dodaj_nas():
         return f"Greška: {e}"
 
 @app.route('/api/users', methods=['GET'])
+@admin_required
 def get_users():
     """
-    Vraća listu svih korisnika
+    Vraća listu svih korisnika (SAMO ADMIN)
     ---
     tags:
       - Users
+    security:
+      - Bearer: []
     responses:
       200:
         description: Lista korisnika
@@ -147,6 +164,10 @@ def get_users():
               role:
                 type: string
                 example: Admin
+      401:
+        description: Nedostaje ili je nevalidan token
+      403:
+        description: Korisnik nije admin
     """
     users = User.query.all() #uzmi sve zapise iz tabele User
     #biramo informacije koje ce se prikazati
@@ -154,12 +175,15 @@ def get_users():
     return jsonify(user_list) #pakujemo u json format
 
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
+@admin_required
 def delete_user(user_id):
     """
-    Briše korisnika po ID-u
+    Briše korisnika po ID-u (SAMO ADMIN)
     ---
     tags:
       - Users
+    security:
+      - Bearer: []
     parameters:
       - name: user_id
         in: path
@@ -169,8 +193,10 @@ def delete_user(user_id):
     responses:
       200:
         description: Korisnik uspešno obrisan
+      401:
+        description: Nedostaje ili je nevalidan token
       403:
-        description: Pokušaj brisanja glavnog admina (Anja/Una) - zabranjeno
+        description: Pokušaj brisanja glavnog admina (Anja/Una), ili korisnik nije admin
       404:
         description: Korisnik nije pronađen
       500:
@@ -191,12 +217,15 @@ def delete_user(user_id):
         return jsonify({"message": f"Greška na serveru: {str(e)}"}), 500
 
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
+@admin_required
 def update_user(user_id):
     """
-    Ažurira korisničko ime
+    Ažurira korisničko ime (SAMO ADMIN)
     ---
     tags:
       - Users
+    security:
+      - Bearer: []
     parameters:
       - name: user_id
         in: path
@@ -217,6 +246,10 @@ def update_user(user_id):
         description: Ime uspešno promenjeno
       400:
         description: Korisničko ime je već zauzeto
+      401:
+        description: Nedostaje ili je nevalidan token
+      403:
+        description: Korisnik nije admin
       404:
         description: Korisnik nije pronađen
       500:

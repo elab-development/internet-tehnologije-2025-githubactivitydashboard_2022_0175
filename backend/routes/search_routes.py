@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from services.github_service import GitHubService
 from services.search_service import SearchService
 from schemas.searchhistory_schema import search_histories_schema
+from utils.auth_utils import token_required
 
 search_bp = Blueprint('search', __name__)
 
@@ -88,12 +89,15 @@ def search_repos():
 
 
 @search_bp.route('/api/search/history/<int:user_id>', methods=['GET'])
+@token_required
 def get_history(user_id):
     """
-    Istorija pretraga za konkretnog korisnika
+    Istorija pretraga za konkretnog korisnika (samo vlasnik ili admin)
     ---
     tags:
       - Search
+    security:
+      - Bearer: []
     parameters:
       - name: user_id
         in: path
@@ -118,9 +122,17 @@ def get_history(user_id):
                 type: string
               user_id:
                 type: integer
+      401:
+        description: Nedostaje ili je nevalidan token
+      403:
+        description: Pokušaj pregleda tuđe istorije bez admin ovlašćenja
     """
-    # Zahtev: "Pristup pojedinim rutama omogućen samo autentifikovanim korisnicima"
-    # Za sada dozvoljavamo preko ID-a, kasnije ćemo dodati pravu zaštitu
+    # Korisnik sme da vidi samo SVOJU istoriju, osim ako je admin -
+    # ranije je bilo moguće da bilo ko (čak i neulogovan) vidi tuđu
+    # istoriju prostom promenom user_id u URL-u.
+    current = request.current_user
+    if current['id'] != user_id and current.get('role') != 'Admin':
+        return jsonify({"error": "Nemate dozvolu da vidite tuđu istoriju pretraga"}), 403
+
     history = SearchService.get_user_history(user_id)
     return jsonify(search_histories_schema.dump(history)), 200
-
