@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from services.github_service import GitHubService
 from services.search_service import SearchService
 from schemas.searchhistory_schema import search_histories_schema
-from utils.auth_utils import token_required
+from utils.auth_utils import token_required, optional_auth
 
 search_bp = Blueprint('search', __name__)
 
@@ -59,9 +59,14 @@ def search_repos():
       404:
         description: Korisnik ne postoji na GitHub-u
     """
-    data = request.json # Preuzima podatke sa frontenda (query i user_id).
+    data = request.json # Preuzima podatke sa frontenda (query).
     query = data.get('query') # To je username koji korisnik kuca u search bar.
-    user_id = data.get('user_id') # ID ulogovanog korisnika (ako postoji).
+
+    # user_id se NE uzima iz tela zahteva (klijent bi mogao poslati tuđi ID i
+    # tako "zatrovati" tuđu istoriju pretraga) - uzima se iz tokena, ako
+    # postoji. Ako korisnik nije ulogovan, pretraga i dalje radi, samo se ne loguje.
+    current = optional_auth()
+    user_id = current['id'] if current else None
 
     # 1. Poziva GitHub servis da proveri da li taj korisnik uopšte postoji na GitHub-u.
     user_info = GitHubService.get_user_info(query)

@@ -124,18 +124,12 @@ with app.app_context():
 def home():
     return "<h1>Docker Postgres je online!</h1>"
 
-@app.route('/dodaj-nas') #inicijalizacija sistema i admina
-def dodaj_nas():
-    try:
-        db.session.query(User).delete()
-        pw = bcrypt.generate_password_hash('123').decode('utf-8') #hesujemo lozinku radi bezbednosti
-        db.session.add(User(username='Anja', email='anja@example.com', password=pw, role='Admin'))
-        db.session.add(User(username='Una', email='una@example.com', password=pw, role='Admin'))
-        db.session.commit()
-        return "Anja (Admin) i Una (Amind) uspešno upisane!"
-    except Exception as e:
-        db.session.rollback()
-        return f"Greška: {e}"
+# NAPOMENA: ruta '/dodaj-nas' je uklonjena - bila je javno dostupna (GET, bez
+# ikakve autentifikacije) i brisala je SVE korisnike iz baze pa upisivala
+# samo Anja/Una admin naloge. Bilo ko ko zna putanju mogao je time da obriše
+# celu users tabelu. Ista funkcionalnost (seed admin naloga) sada je u
+# samostalnoj skripti: backend/seed_admins.py, koja se pokreće ručno,
+# nikad preko HTTP zahteva.
 
 @app.route('/api/users', methods=['GET'])
 @admin_required

@@ -60,6 +60,25 @@ def _decode_token_from_header():
         return None, (jsonify({"error": "Nevalidan token"}), 401)
 
 
+def optional_auth():
+    """Ako je poslat validan Bearer token, vraća payload; inače None (bez greške).
+
+    Koristi se na javnim rutama gde NE želimo da zahtevamo prijavu, ali
+    želimo da, AKO je korisnik ulogovan, iskoristimo njegov pravi ID iz
+    tokena za logovanje - umesto da slepo verujemo user_id-u koji klijent
+    može poslati u telu zahteva (ranije je bilo moguće ubaciti lažne unose
+    u TUĐU istoriju pretraga prostim slanjem tuđeg user_id-a).
+    """
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return None
+    token = auth_header.split(' ', 1)[1]
+    try:
+        return jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+    except jwt.InvalidTokenError:
+        return None
+
+
 def token_required(f):
     """Zahteva bilo kog ulogovanog korisnika (User ili Admin)."""
     @wraps(f)
