@@ -20,8 +20,8 @@ function Login({ onLoginSuccess }) {
         setStatus(`Welcome back!`);
 
         if (onLoginSuccess) {
-          // 2. OVO JE KLJUČ: Dodajemo i treći parametar - data.user_id
-          onLoginSuccess(data.role, data.username, data.user_id);
+          // Dodajemo i token - bez njega backend ne zna ko smo na sledećim zahtevima
+          onLoginSuccess(data.role, data.username, data.user_id, data.token);
         }
 
       } else {

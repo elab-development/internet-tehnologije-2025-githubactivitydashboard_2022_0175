@@ -63,7 +63,16 @@ swagger_template = {
         {"name": "Repository", "description": "Podaci o repozitorijumima i kontributorima"},
         {"name": "Watchlist", "description": "Praćeni (followed) repozitorijumi"},
         {"name": "Activity", "description": "Aktivnosti (događaji) na repozitorijumima"}
-    ]
+    ],
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Unesi 'Bearer <token>' (npr: Bearer eyJhbGciOi...). "
+                            "Token dobijaš iz odgovora na /api/auth/login."
+        }
+    }
 }
 
 swagger = Swagger(app, template=swagger_template)
@@ -78,6 +87,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
 #bkv gps do naseg servera, govori Flasku gde se nalazi nasa baza i kako da udjemo u nju
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 #omogucava brzi rad baze
+
+# Tajni ključ kojim se potpisuju JWT tokeni (login/autorizacija).
+# U produkciji se čita iz env promenljive - OBAVEZNO postaviti u .env!
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-me-please')
 
 # 3. INICIJALIZACIJA
 db.init_app(app) #uzima moj objekat baze db i prikljucuje ga na moju apk app
@@ -94,6 +107,7 @@ from routes.search_routes import search_bp
 from routes.repository_routes import repo_bp
 from routes.watchlist_routes import watchlist_bp
 from routes.activity_routes import activity_bp
+from utils.auth_utils import admin_required
 
 app.register_blueprint(auth_bp) #rute su putanje do funkcija
 app.register_blueprint(search_bp)
@@ -110,26 +124,23 @@ with app.app_context():
 def home():
     return "<h1>Docker Postgres je online!</h1>"
 
-@app.route('/dodaj-nas') #inicijalizacija sistema i admina
-def dodaj_nas():
-    try:
-        db.session.query(User).delete()
-        pw = bcrypt.generate_password_hash('123').decode('utf-8') #hesujemo lozinku radi bezbednosti
-        db.session.add(User(username='Anja', email='anja@example.com', password=pw, role='Admin'))
-        db.session.add(User(username='Una', email='una@example.com', password=pw, role='Admin'))
-        db.session.commit()
-        return "Anja (Admin) i Una (Amind) uspešno upisane!"
-    except Exception as e:
-        db.session.rollback()
-        return f"Greška: {e}"
+# NAPOMENA: ruta '/dodaj-nas' je uklonjena - bila je javno dostupna (GET, bez
+# ikakve autentifikacije) i brisala je SVE korisnike iz baze pa upisivala
+# samo Anja/Una admin naloge. Bilo ko ko zna putanju mogao je time da obriše
+# celu users tabelu. Ista funkcionalnost (seed admin naloga) sada je u
+# samostalnoj skripti: backend/seed_admins.py, koja se pokreće ručno,
+# nikad preko HTTP zahteva.
 
 @app.route('/api/users', methods=['GET'])
+@admin_required
 def get_users():
     """
-    Vraća listu svih korisnika
+    Vraća listu svih korisnika (SAMO ADMIN)
     ---
     tags:
       - Users
+    security:
+      - Bearer: []
     responses:
       200:
         description: Lista korisnika
@@ -147,6 +158,10 @@ def get_users():
               role:
                 type: string
                 example: Admin
+      401:
+        description: Nedostaje ili je nevalidan token
+      403:
+        description: Korisnik nije admin
     """
     users = User.query.all() #uzmi sve zapise iz tabele User
     #biramo informacije koje ce se prikazati
@@ -154,12 +169,15 @@ def get_users():
     return jsonify(user_list) #pakujemo u json format
 
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
+@admin_required
 def delete_user(user_id):
     """
-    Briše korisnika po ID-u
+    Briše korisnika po ID-u (SAMO ADMIN)
     ---
     tags:
       - Users
+    security:
+      - Bearer: []
     parameters:
       - name: user_id
         in: path
@@ -169,8 +187,10 @@ def delete_user(user_id):
     responses:
       200:
         description: Korisnik uspešno obrisan
+      401:
+        description: Nedostaje ili je nevalidan token
       403:
-        description: Pokušaj brisanja glavnog admina (Anja/Una) - zabranjeno
+        description: Pokušaj brisanja glavnog admina (Anja/Una), ili korisnik nije admin
       404:
         description: Korisnik nije pronađen
       500:
@@ -191,12 +211,15 @@ def delete_user(user_id):
         return jsonify({"message": f"Greška na serveru: {str(e)}"}), 500
 
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
+@admin_required
 def update_user(user_id):
     """
-    Ažurira korisničko ime
+    Ažurira korisničko ime (SAMO ADMIN)
     ---
     tags:
       - Users
+    security:
+      - Bearer: []
     parameters:
       - name: user_id
         in: path
@@ -217,6 +240,10 @@ def update_user(user_id):
         description: Ime uspešno promenjeno
       400:
         description: Korisničko ime je već zauzeto
+      401:
+        description: Nedostaje ili je nevalidan token
+      403:
+        description: Korisnik nije admin
       404:
         description: Korisnik nije pronađen
       500:
