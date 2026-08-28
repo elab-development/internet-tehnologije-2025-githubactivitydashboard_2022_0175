@@ -26,17 +26,17 @@ describe('Login', () => {
     expect(JSON.parse(options.body)).toEqual({ username: 'una', password: 'tajna' });
   });
 
-  it('pri uspehu poziva onLoginSuccess sa role, username i user_id', async () => {
+  it('pri uspehu poziva onLoginSuccess sa role, username, user_id i token-om', async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ role: 'admin', username: 'una', user_id: 7 }),
+      json: async () => ({ role: 'admin', username: 'una', user_id: 7, token: 'jwt-token-123' }),
     });
     const onLoginSuccess = jest.fn();
     render(<Login onLoginSuccess={onLoginSuccess} />);
 
     fillAndSubmit();
 
-    await waitFor(() => expect(onLoginSuccess).toHaveBeenCalledWith('admin', 'una', 7));
+    await waitFor(() => expect(onLoginSuccess).toHaveBeenCalledWith('admin', 'una', 7, 'jwt-token-123'));
     expect(screen.getByText(/Welcome back/i)).toBeInTheDocument();
   });
 

@@ -49,3 +49,15 @@ def client(app):
 def db(app):
     """Pristup SQLAlchemy sesiji unutar app konteksta."""
     return _db
+
+
+def auth_headers(user):
+    """
+    Pravi Authorization header sa validnim JWT tokenom za datog User-a,
+    za testiranje ruta koje su zaštićene sa @token_required / @admin_required.
+
+    Koristi se ovako: client.get("/api/users", headers=auth_headers(admin))
+    """
+    from utils.auth_utils import generate_token
+    token = generate_token(user)
+    return {"Authorization": f"Bearer {token}"}

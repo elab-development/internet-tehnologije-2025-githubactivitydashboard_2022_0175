@@ -38,9 +38,9 @@ function App() {
 //"Čim se App.js učita (prazne zagrade []), ti skokni do onog sefa u brauzeru
  //(localStorage) i vidi da li su Anja ili Una već ulogovane. To uradi
  //samo tad i posle me pusti da radim."
-  const handleLoginSuccess = (role, name, id) => {
+  const handleLoginSuccess = (role, name, id, token) => {
     // Prvo sačuvamo u browseru da se ne izbriše na refresh
-    const userData = { role, name, id };
+    const userData = { role, name, id, token };
     localStorage.setItem('userSession', JSON.stringify(userData));
    //bez ovoga, cim kliknemo refresh, apk bi nas izlogovala
 

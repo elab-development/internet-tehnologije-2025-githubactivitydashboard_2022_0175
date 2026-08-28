@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from services.github_service import GitHubService
 from services.search_service import SearchService
+from utils.auth_utils import optional_auth
 
 activity_bp = Blueprint('activity', __name__)
 
@@ -49,7 +50,11 @@ def get_repo_details_route():
     try:
         data = request.json or {}
         repo_url = data.get('url')
-        user_id = data.get('user_id')
+
+        # user_id se uzima iz tokena (ako postoji), ne iz tela zahteva -
+        # iz istog razloga kao u search_repos (sprečava logovanje pod tuđim ID-jem)
+        current = optional_auth()
+        user_id = current['id'] if current else None
 
         if not repo_url:
             return jsonify({"error": "URL is required"}), 400

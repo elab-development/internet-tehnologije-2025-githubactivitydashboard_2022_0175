@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from services.user_service import UserService
 from schemas.user_schema import user_schema
+from utils.auth_utils import generate_token
 
 auth_bp = Blueprint('auth_bp', __name__)
 
@@ -103,8 +104,10 @@ def login():
     user = UserService.login_user(data.get('username'), data.get('password'))
 
     if user:
+        token = generate_token(user)
         return jsonify({
             "message": "Login successful",
+            "token": token,
             "user_id": user.user_id,
             "username": user.username,
             "role": user.role

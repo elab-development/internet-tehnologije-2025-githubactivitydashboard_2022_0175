@@ -14,9 +14,9 @@ services:
   backend:
     build: ./backend
     container_name: github_dashboard_backend
-    env_file: ./backend/.env  # <--- OVA LINIJA JE KLJUČNA!
+    env_file: ./backend/.env  
     environment:
-      DATABASE_URL: postgresql://elab_user:elab_password@db:5432/github_stats
+      DATABASE_URL: postgresql+psycopg://elab_user:elab_password@db:5432/github_stats
     ports:
       - "5000:5000"
     volumes:
@@ -27,12 +27,12 @@ services:
     build: ./frontend
     container_name: github_dashboard_frontend
     ports:
-      - "3000:3000" # Prvi broj je ono što kucaš u browseru (localhost:3000)
+      - "3000:3000" 
     volumes:
       - ./frontend:/app
-      - /app/node_modules # Ovo je bitno da Docker ne pregazi biblioteke tvojim lokalnim
+      - /app/node_modules 
     environment:
-      - CHOKIDAR_USEPOLLING=true # Ovo osigurava da se sajt osveži čim sačuvaš kod u DataSpell-u
+      - CHOKIDAR_USEPOLLING=true 
     depends_on:
       - backend
 

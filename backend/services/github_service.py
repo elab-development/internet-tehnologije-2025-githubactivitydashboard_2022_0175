@@ -56,6 +56,16 @@ class GitHubService:
             return None
 
     @staticmethod
+    def get_repo_languages(owner, repo):
+        """Vraca broj bajtova koda po programskom jeziku za repozitorijum."""
+        url = f"https://api.github.com/repos/{owner}/{repo}/languages"
+        response = requests.get(url, headers=GitHubService.get_headers())
+
+        if response.status_code == 200:
+            return response.json()  # npr. {"JavaScript": 123456, "Python": 45678}
+        return {}
+
+    @staticmethod
     def get_repo_events(owner, repo, filter_type='All', author_filter=''):
         """Vraca filtriranu listu dogadjaja za repo, spremnu za frontend."""
         url = f"https://api.github.com/repos/{owner}/{repo}/events?per_page=100"

@@ -4,7 +4,8 @@ import UserResults from '../components/UserResults';
 import ActivityFeed from '../components/ActivityFeed';
 import ActivityDetails from '../components/ActivityDetails';
 import {API_URL} from "../config";
-
+import { authFetch } from "../utils/authFetch";
+import ActivityCharts from '../components/ActivityCharts';
 const RepoView = ({ currentUserId }) => {
   const { owner, repo } = useParams();
   const navigate = useNavigate();
@@ -53,7 +54,7 @@ const RepoView = ({ currentUserId }) => {
     const checkFollowing = async () => {
       if (!currentUserId || !repo) return;
       try {
-        const res = await fetch(`${API_URL}/api/following?user_id=${currentUserId}`);
+        const res = await authFetch(`${API_URL}/api/following?user_id=${currentUserId}`);
         const data = await res.json();
         if (res.ok) {
           // Proveravamo da li se trenutni repo (owner/repo) nalazi u listi
@@ -169,7 +170,7 @@ const RepoView = ({ currentUserId }) => {
          // 2. Čak i ako githubData još nije učitan, owner i repo iz URL-a jesu!
          const repoFullName = `${owner}/${repo}`;
 
-         const response = await fetch(`${API_URL}/api/watchlist/follow`, {
+         const response = await authFetch(`${API_URL}/api/watchlist/follow`, {
              method: 'POST',
              headers: { 'Content-Type': 'application/json' },
              body: JSON.stringify({
@@ -257,6 +258,10 @@ const RepoView = ({ currentUserId }) => {
           </div>
         </div>
       )}
+
+      {/* Vizualizacija: udeo tipova aktivnosti + programski jezici repozitorijuma */}
+      <ActivityCharts activities={activities} owner={owner} repo={repo} />
+
 
       {/* FILTERI I FEED */}
       <div style={{ marginTop: '40px' }}>

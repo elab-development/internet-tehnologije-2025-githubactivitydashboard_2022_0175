@@ -3,24 +3,22 @@ from services.repository_service import RepositoryService
 from services.search_service import SearchService
 from schemas.repository_schema import repositories_schema
 from services.telegram_service import TelegramService
+from utils.auth_utils import token_required
 
 watchlist_bp = Blueprint('watchlist_bp', __name__)
 
 
 # --- 1. MY HISTORY (Sve pretrage iz baze) ---
 @watchlist_bp.route('/api/history', methods=['GET'])
+@token_required
 def get_my_history():
     """
-    Istorija pretraga korisnika (preko query parametra)
+    Istorija pretraga ulogovanog korisnika
     ---
     tags:
       - Watchlist
-    parameters:
-      - name: user_id
-        in: query
-        type: integer
-        required: true
-        description: ID korisnika
+    security:
+      - Bearer: []
     responses:
       200:
         description: Lista pretraga korisnika
@@ -35,13 +33,12 @@ def get_my_history():
                 type: string
               timestamp:
                 type: string
-      400:
-        description: user_id nije prosleđen
+      401:
+        description: Nedostaje ili je nevalidan token
     """
-    user_id = request.args.get('user_id')
-
-    if not user_id:
-        return jsonify({"error": "user_id is required"}), 400
+    # ID korisnika se uzima IZ TOKENA, ne iz query parametra - tako niko ne
+    # može da vidi tuđu istoriju prosto menjajući user_id u URL-u.
+    user_id = request.current_user['id']
 
     history = SearchService.get_user_history(user_id)
 
@@ -57,18 +54,15 @@ def get_my_history():
 
 # --- 2. FOLLOWING LIST (Samo zapraćeni repozitorijumi) ---
 @watchlist_bp.route('/api/following', methods=['GET'])
+@token_required
 def get_following_list():
     """
-    Lista repozitorijuma koje korisnik prati
+    Lista repozitorijuma koje ulogovani korisnik prati
     ---
     tags:
       - Watchlist
-    parameters:
-      - name: user_id
-        in: query
-        type: integer
-        required: true
-        description: ID korisnika
+    security:
+      - Bearer: []
     responses:
       200:
         description: Lista praćenih repozitorijuma
@@ -83,13 +77,10 @@ def get_following_list():
                 type: string
               url:
                 type: string
-      400:
-        description: user_id nije prosleđen
+      401:
+        description: Nedostaje ili je nevalidan token
     """
-    user_id = request.args.get('user_id', type=int)
-
-    if not user_id:
-        return jsonify({"error": "user_id is required"}), 400
+    user_id = request.current_user['id']
 
     following = RepositoryService.get_user_watchlist(user_id)
     return jsonify(repositories_schema.dump(following)), 200
@@ -98,23 +89,23 @@ def get_following_list():
 # --- 3. AKCIJE: FOLLOW & UNFOLLOW ---
 
 @watchlist_bp.route('/api/watchlist/follow', methods=['POST'])
+@token_required
 def follow_repo():
     """
-    Dodaje repozitorijum u listu praćenih
+    Dodaje repozitorijum u listu praćenih ulogovanog korisnika
     ---
     tags:
       - Watchlist
+    security:
+      - Bearer: []
     parameters:
       - name: body
         in: body
         required: true
         schema:
           type: object
-          required: [user_id, repo_data]
+          required: [repo_data]
           properties:
-            user_id:
-              type: integer
-              example: 1
             repo_data:
               type: object
               description: GitHub podaci o repozitorijumu (mora sadržati full_name i html_url)
@@ -130,12 +121,15 @@ def follow_repo():
         description: Repozitorijum uspešno dodat u praćene
       400:
         description: Nedostaju podaci
+      401:
+        description: Nedostaje ili je nevalidan token
     """
     data = request.json
-    if not data or 'user_id' not in data or 'repo_data' not in data:
+    if not data or 'repo_data' not in data:
         return jsonify({"error": "Missing data"}), 400
 
-    res, status = RepositoryService.follow_repository(data['user_id'], data['repo_data'])
+    user_id = request.current_user['id']
+    res, status = RepositoryService.follow_repository(user_id, data['repo_data'])
 
     # Slanje Telegram notifikacije pri uspešnom dodavanju
     if status == 200 or status == 201:
@@ -147,18 +141,16 @@ def follow_repo():
 
 
 @watchlist_bp.route('/api/watchlist/unfollow', methods=['DELETE'])
+@token_required
 def unfollow_repo():
     """
-    Uklanja repozitorijum iz liste praćenih
+    Uklanja repozitorijum iz liste praćenih ulogovanog korisnika
     ---
     tags:
       - Watchlist
+    security:
+      - Bearer: []
     parameters:
-      - name: user_id
-        in: query
-        type: integer
-        required: true
-        description: ID korisnika
       - name: repo_id
         in: query
         type: string
@@ -169,15 +161,17 @@ def unfollow_repo():
         description: Uspešno uklonjeno iz praćenih
       400:
         description: Nedostaju parametri
+      401:
+        description: Nedostaje ili je nevalidan token
       404:
         description: Repozitorijum nije pronađen u praćenima
     """
-    user_id = request.args.get('user_id')
     identifier = request.args.get('repo_id')
 
-    if not user_id or not identifier:
-        return jsonify({"error": "user_id and repo_id (or name) are required"}), 400
+    if not identifier:
+        return jsonify({"error": "repo_id (or name) is required"}), 400
 
+    user_id = request.current_user['id']
     success = RepositoryService.unfollow_repository(user_id, identifier)
 
     if success:
