@@ -15,11 +15,14 @@ from app_models.models import db, ma, User
 
 app = Flask(__name__)
 
-# Cors omogucava da ako react radi na portu 3000, a Flask na 5000 se obezbedi komunikacija.
-#Pregledači (browsers) blokiraju komunikaciju između različitih portova iz bezbednosnih razloga, pa smo pomoću
-# flask-cors dozvolili našem frontendu da bezbedno poziva API.
-CORS(app, resources={r"/*": {
-    "origins": "*", #bilo koji sajt moze da uputi zahtev mom serveru
+
+ALLOWED_ORIGINS = [
+    os.environ.get('FRONTEND_URL', 'http://localhost:3000'),
+    "https://github-dashboard-frontend-cgdz.onrender.com"
+]
+
+CORS(app, resources={r"/api/*": {
+    "origins": ALLOWED_ORIGINS,
     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     "allow_headers": ["Content-Type", "Authorization"]
 }})
