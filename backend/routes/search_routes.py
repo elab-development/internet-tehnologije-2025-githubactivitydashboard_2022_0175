@@ -96,6 +96,42 @@ def search_repos():
 @search_bp.route('/api/search/history/<int:user_id>', methods=['GET'])
 @token_required
 def get_history(user_id):
+    """
+       Istorija pretraga za konkretnog korisnika (samo vlasnik ili admin)
+       ---
+       tags:
+         - Search
+       security:
+         - Bearer: []
+       parameters:
+         - name: user_id
+           in: path
+           type: integer
+           required: true
+           description: ID korisnika čija se istorija pretraga vraća
+       responses:
+         200:
+           description: Lista prethodnih pretraga korisnika
+           schema:
+             type: array
+             items:
+               type: object
+               properties:
+                 search_id:
+                   type: integer
+                 query:
+                   type: string
+                 search_type:
+                   type: string
+                 timestamp:
+                   type: string
+                 user_id:
+                   type: integer
+         401:
+           description: Nedostaje ili je nevalidan token
+         403:
+           description: Pokušaj pregleda tuđe istorije bez admin ovlašćenja
+       """
     current = request.current_user
 
     # Eksplicitno konvertujemo obe vrednosti u int
