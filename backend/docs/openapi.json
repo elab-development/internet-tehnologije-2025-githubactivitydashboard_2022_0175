@@ -272,15 +272,6 @@
     },
     "/api/following": {
       "get": {
-        "parameters": [
-          {
-            "description": "ID korisnika",
-            "in": "query",
-            "name": "user_id",
-            "required": true,
-            "type": "integer"
-          }
-        ],
         "responses": {
           "200": {
             "description": "Lista praćenih repozitorijuma",
@@ -302,11 +293,16 @@
               "type": "array"
             }
           },
-          "400": {
-            "description": "user_id nije prosleđen"
+          "401": {
+            "description": "Nedostaje ili je nevalidan token"
           }
         },
-        "summary": "Lista repozitorijuma koje korisnik prati",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "summary": "Lista repozitorijuma koje ulogovani korisnik prati",
         "tags": [
           "Watchlist"
         ]
@@ -314,15 +310,6 @@
     },
     "/api/history": {
       "get": {
-        "parameters": [
-          {
-            "description": "ID korisnika",
-            "in": "query",
-            "name": "user_id",
-            "required": true,
-            "type": "integer"
-          }
-        ],
         "responses": {
           "200": {
             "description": "Lista pretraga korisnika",
@@ -344,11 +331,16 @@
               "type": "array"
             }
           },
-          "400": {
-            "description": "user_id nije prosleđen"
+          "401": {
+            "description": "Nedostaje ili je nevalidan token"
           }
         },
-        "summary": "Istorija pretraga korisnika (preko query parametra)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "summary": "Istorija pretraga ulogovanog korisnika",
         "tags": [
           "Watchlist"
         ]
@@ -449,6 +441,42 @@
         ]
       }
     },
+    "/api/repository/{owner}/{repo_name}/languages": {
+      "get": {
+        "parameters": [
+          {
+            "example": "facebook",
+            "in": "path",
+            "name": "owner",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": "react",
+            "in": "path",
+            "name": "repo_name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapa jezik -> broj bajtova",
+            "schema": {
+              "example": {
+                "CSS": 45678,
+                "JavaScript": 1234567
+              },
+              "type": "object"
+            }
+          }
+        },
+        "summary": "Broj bajtova koda po programskom jeziku (za grafikon)",
+        "tags": [
+          "Repository"
+        ]
+      }
+    },
     "/api/search/history/{user_id}": {
       "get": {
         "parameters": [
@@ -486,9 +514,20 @@
               },
               "type": "array"
             }
+          },
+          "401": {
+            "description": "Nedostaje ili je nevalidan token"
+          },
+          "403": {
+            "description": "Pokušaj pregleda tuđe istorije bez admin ovlašćenja"
           }
         },
-        "summary": "Istorija pretraga za konkretnog korisnika",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "summary": "Istorija pretraga za konkretnog korisnika (samo vlasnik ili admin)",
         "tags": [
           "Search"
         ]
@@ -593,9 +632,20 @@
               },
               "type": "array"
             }
+          },
+          "401": {
+            "description": "Nedostaje ili je nevalidan token"
+          },
+          "403": {
+            "description": "Korisnik nije admin"
           }
         },
-        "summary": "Vraća listu svih korisnika",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "summary": "Vraća listu svih korisnika (SAMO ADMIN)",
         "tags": [
           "Users"
         ]
@@ -616,8 +666,11 @@
           "200": {
             "description": "Korisnik uspešno obrisan"
           },
+          "401": {
+            "description": "Nedostaje ili je nevalidan token"
+          },
           "403": {
-            "description": "Pokušaj brisanja glavnog admina (Anja/Una) - zabranjeno"
+            "description": "Pokušaj brisanja glavnog admina (Anja/Una), ili korisnik nije admin"
           },
           "404": {
             "description": "Korisnik nije pronađen"
@@ -626,7 +679,12 @@
             "description": "Greška na serveru"
           }
         },
-        "summary": "Briše korisnika po ID-u",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "summary": "Briše korisnika po ID-u (SAMO ADMIN)",
         "tags": [
           "Users"
         ]
@@ -662,6 +720,12 @@
           "400": {
             "description": "Korisničko ime je već zauzeto"
           },
+          "401": {
+            "description": "Nedostaje ili je nevalidan token"
+          },
+          "403": {
+            "description": "Korisnik nije admin"
+          },
           "404": {
             "description": "Korisnik nije pronađen"
           },
@@ -669,7 +733,12 @@
             "description": "Greška na serveru"
           }
         },
-        "summary": "Ažurira korisničko ime",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "summary": "Ažurira korisničko ime (SAMO ADMIN)",
         "tags": [
           "Users"
         ]
@@ -697,14 +766,9 @@
                     }
                   },
                   "type": "object"
-                },
-                "user_id": {
-                  "example": 1,
-                  "type": "integer"
                 }
               },
               "required": [
-                "user_id",
                 "repo_data"
               ],
               "type": "object"
@@ -717,9 +781,17 @@
           },
           "400": {
             "description": "Nedostaju podaci"
+          },
+          "401": {
+            "description": "Nedostaje ili je nevalidan token"
           }
         },
-        "summary": "Dodaje repozitorijum u listu praćenih",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "summary": "Dodaje repozitorijum u listu praćenih ulogovanog korisnika",
         "tags": [
           "Watchlist"
         ]
@@ -728,13 +800,6 @@
     "/api/watchlist/unfollow": {
       "delete": {
         "parameters": [
-          {
-            "description": "ID korisnika",
-            "in": "query",
-            "name": "user_id",
-            "required": true,
-            "type": "integer"
-          },
           {
             "description": "ID ili puno ime repozitorijuma koji se uklanja",
             "in": "query",
@@ -750,11 +815,19 @@
           "400": {
             "description": "Nedostaju parametri"
           },
+          "401": {
+            "description": "Nedostaje ili je nevalidan token"
+          },
           "404": {
             "description": "Repozitorijum nije pronađen u praćenima"
           }
         },
-        "summary": "Uklanja repozitorijum iz liste praćenih",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "summary": "Uklanja repozitorijum iz liste praćenih ulogovanog korisnika",
         "tags": [
           "Watchlist"
         ]
@@ -765,6 +838,14 @@
     "http",
     "https"
   ],
+  "securityDefinitions": {
+    "Bearer": {
+      "description": "Unesi 'Bearer <token>' (npr: Bearer eyJhbGciOi...). Token dobijaš iz odgovora na /api/auth/login.",
+      "in": "header",
+      "name": "Authorization",
+      "type": "apiKey"
+    }
+  },
   "swagger": "2.0",
   "tags": [
     {

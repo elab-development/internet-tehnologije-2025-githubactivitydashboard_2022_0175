@@ -9,21 +9,21 @@ paths:
   /api/activity/details/{owner}/{repo}/{sha}:
     get:
       parameters:
-        - example: facebook
-          in: path
-          name: owner
-          required: true
-          type: string
-        - example: react
-          in: path
-          name: repo
-          required: true
-          type: string
-        - description: SHA hash commit-a
-          in: path
-          name: sha
-          required: true
-          type: string
+      - example: facebook
+        in: path
+        name: owner
+        required: true
+        type: string
+      - example: react
+        in: path
+        name: repo
+        required: true
+        type: string
+      - description: SHA hash commit-a
+        in: path
+        name: sha
+        required: true
+        type: string
       responses:
         '200':
           description: Detalji commit-a
@@ -33,33 +33,33 @@ paths:
           description: Commit nije pronađen
       summary: Detalji o pojedinačnom commit-u
       tags:
-        - Activity
+      - Activity
   /api/activity/list:
     post:
       parameters:
-        - in: body
-          name: body
-          required: true
-          schema:
-            properties:
-              author_filter:
-                description: Filter po autoru događaja
-                example: ''
-                type: string
-              filter:
-                description: Filter po tipu događaja
-                example: All
-                type: string
-              owner:
-                example: facebook
-                type: string
-              repo:
-                example: react
-                type: string
-            required:
-              - owner
-              - repo
-            type: object
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            author_filter:
+              description: Filter po autoru događaja
+              example: ''
+              type: string
+            filter:
+              description: Filter po tipu događaja
+              example: All
+              type: string
+            owner:
+              example: facebook
+              type: string
+            repo:
+              example: react
+              type: string
+          required:
+          - owner
+          - repo
+          type: object
       responses:
         '200':
           description: Lista aktivnosti
@@ -73,25 +73,25 @@ paths:
           description: Greška prilikom komunikacije sa GitHub API-jem
       summary: Lista aktivnosti (događaja) za repozitorijum, uživo sa GitHub-a
       tags:
-        - Activity
+      - Activity
   /api/auth/login:
     post:
       parameters:
-        - in: body
-          name: body
-          required: true
-          schema:
-            properties:
-              password:
-                example: lozinka123
-                type: string
-              username:
-                example: Anja
-                type: string
-            required:
-              - username
-              - password
-            type: object
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            password:
+              example: lozinka123
+              type: string
+            username:
+              example: Anja
+              type: string
+          required:
+          - username
+          - password
+          type: object
       responses:
         '200':
           description: Uspešna prijava
@@ -110,29 +110,29 @@ paths:
           description: Pogrešno korisničko ime ili lozinka
       summary: Prijava korisnika
       tags:
-        - Auth
+      - Auth
   /api/auth/register:
     post:
       parameters:
-        - in: body
-          name: body
-          required: true
-          schema:
-            properties:
-              email:
-                example: anja@example.com
-                type: string
-              password:
-                example: lozinka123
-                type: string
-              username:
-                example: Anja
-                type: string
-            required:
-              - username
-              - email
-              - password
-            type: object
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            email:
+              example: anja@example.com
+              type: string
+            password:
+              example: lozinka123
+              type: string
+            username:
+              example: Anja
+              type: string
+          required:
+          - username
+          - email
+          - password
+          type: object
       responses:
         '201':
           description: Korisnik uspešno registrovan
@@ -151,26 +151,26 @@ paths:
           description: Nedostaju podaci ili korisničko ime/email već postoji
       summary: Registracija novog korisnika
       tags:
-        - Auth
+      - Auth
   /api/contributors/{owner}/{repo_name}:
     get:
       parameters:
-        - example: facebook
-          in: path
-          name: owner
-          required: true
-          type: string
-        - example: react
-          in: path
-          name: repo_name
-          required: true
-          type: string
-        - description: Ograničava broj vraćenih kontributora
-          example: 3
-          in: query
-          name: limit
-          required: false
-          type: integer
+      - example: facebook
+        in: path
+        name: owner
+        required: true
+        type: string
+      - example: react
+        in: path
+        name: repo_name
+        required: true
+        type: string
+      - description: Ograničava broj vraćenih kontributora
+        example: 3
+        in: query
+        name: limit
+        required: false
+        type: integer
       responses:
         '200':
           description: Lista kontributora (ili poruka ako ih nema)
@@ -180,15 +180,9 @@ paths:
             type: array
       summary: Lista kontributora repozitorijuma
       tags:
-        - Repository
+      - Repository
   /api/following:
     get:
-      parameters:
-        - description: ID korisnika
-          in: query
-          name: user_id
-          required: true
-          type: integer
       responses:
         '200':
           description: Lista praćenih repozitorijuma
@@ -203,19 +197,15 @@ paths:
                   type: string
               type: object
             type: array
-        '400':
-          description: user_id nije prosleđen
-      summary: Lista repozitorijuma koje korisnik prati
+        '401':
+          description: Nedostaje ili je nevalidan token
+      security:
+      - Bearer: []
+      summary: Lista repozitorijuma koje ulogovani korisnik prati
       tags:
-        - Watchlist
+      - Watchlist
   /api/history:
     get:
-      parameters:
-        - description: ID korisnika
-          in: query
-          name: user_id
-          required: true
-          type: integer
       responses:
         '200':
           description: Lista pretraga korisnika
@@ -230,30 +220,32 @@ paths:
                   type: string
               type: object
             type: array
-        '400':
-          description: user_id nije prosleđen
-      summary: Istorija pretraga korisnika (preko query parametra)
+        '401':
+          description: Nedostaje ili je nevalidan token
+      security:
+      - Bearer: []
+      summary: Istorija pretraga ulogovanog korisnika
       tags:
-        - Watchlist
+      - Watchlist
   /api/repository/details:
     post:
       parameters:
-        - in: body
-          name: body
-          required: true
-          schema:
-            properties:
-              url:
-                description: Puno ime repozitorijuma (owner/repo) ili URL
-                example: facebook/react
-                type: string
-              user_id:
-                description: ID ulogovanog korisnika (opciono, radi logovanja)
-                example: 1
-                type: integer
-            required:
-              - url
-            type: object
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            url:
+              description: Puno ime repozitorijuma (owner/repo) ili URL
+              example: facebook/react
+              type: string
+            user_id:
+              description: ID ulogovanog korisnika (opciono, radi logovanja)
+              example: 1
+              type: integer
+          required:
+          - url
+          type: object
       responses:
         '200':
           description: Podaci o repozitorijumu i status logovanja u bazu
@@ -273,22 +265,22 @@ paths:
       summary: Detalji repozitorijuma (uživo sa GitHub-a), sa opcionim logovanjem
         pretrage
       tags:
-        - Activity
+      - Activity
   /api/repository/{owner}/{repo_name}:
     get:
       parameters:
-        - description: Vlasnik repozitorijuma
-          example: facebook
-          in: path
-          name: owner
-          required: true
-          type: string
-        - description: Naziv repozitorijuma
-          example: react
-          in: path
-          name: repo_name
-          required: true
-          type: string
+      - description: Vlasnik repozitorijuma
+        example: facebook
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Naziv repozitorijuma
+        example: react
+        in: path
+        name: repo_name
+        required: true
+        type: string
       responses:
         '200':
           description: Podaci o repozitorijumu
@@ -298,15 +290,39 @@ paths:
           description: Repozitorijum nije pronađen
       summary: Detalji o repozitorijumu sa GitHub-a
       tags:
-        - Repository
+      - Repository
+  /api/repository/{owner}/{repo_name}/languages:
+    get:
+      parameters:
+      - example: facebook
+        in: path
+        name: owner
+        required: true
+        type: string
+      - example: react
+        in: path
+        name: repo_name
+        required: true
+        type: string
+      responses:
+        '200':
+          description: Mapa jezik -> broj bajtova
+          schema:
+            example:
+              CSS: 45678
+              JavaScript: 1234567
+            type: object
+      summary: Broj bajtova koda po programskom jeziku (za grafikon)
+      tags:
+      - Repository
   /api/search/history/{user_id}:
     get:
       parameters:
-        - description: ID korisnika čija se istorija pretraga vraća
-          in: path
-          name: user_id
-          required: true
-          type: integer
+      - description: ID korisnika čija se istorija pretraga vraća
+        in: path
+        name: user_id
+        required: true
+        type: integer
       responses:
         '200':
           description: Lista prethodnih pretraga korisnika
@@ -325,28 +341,34 @@ paths:
                   type: integer
               type: object
             type: array
-      summary: Istorija pretraga za konkretnog korisnika
+        '401':
+          description: Nedostaje ili je nevalidan token
+        '403':
+          description: Pokušaj pregleda tuđe istorije bez admin ovlašćenja
+      security:
+      - Bearer: []
+      summary: Istorija pretraga za konkretnog korisnika (samo vlasnik ili admin)
       tags:
-        - Search
+      - Search
   /api/search/repositories:
     post:
       parameters:
-        - in: body
-          name: body
-          required: true
-          schema:
-            properties:
-              query:
-                description: GitHub korisničko ime koje se pretražuje
-                example: octocat
-                type: string
-              user_id:
-                description: ID ulogovanog korisnika (opciono, radi logovanja pretrage)
-                example: 1
-                type: integer
-            required:
-              - query
-            type: object
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            query:
+              description: GitHub korisničko ime koje se pretražuje
+              example: octocat
+              type: string
+            user_id:
+              description: ID ulogovanog korisnika (opciono, radi logovanja pretrage)
+              example: 1
+              type: integer
+          required:
+          - query
+          type: object
       responses:
         '200':
           description: Podaci o pronađenom GitHub korisniku
@@ -376,7 +398,7 @@ paths:
           description: Korisnik ne postoji na GitHub-u
       summary: Pretraga GitHub korisnika po korisničkom imenu
       tags:
-        - Search
+      - Search
   /api/users:
     get:
       responses:
@@ -396,128 +418,151 @@ paths:
                   type: string
               type: object
             type: array
-      summary: Vraća listu svih korisnika
+        '401':
+          description: Nedostaje ili je nevalidan token
+        '403':
+          description: Korisnik nije admin
+      security:
+      - Bearer: []
+      summary: Vraća listu svih korisnika (SAMO ADMIN)
       tags:
-        - Users
+      - Users
   /api/users/{user_id}:
     delete:
       parameters:
-        - description: ID korisnika koji se briše
-          in: path
-          name: user_id
-          required: true
-          type: integer
+      - description: ID korisnika koji se briše
+        in: path
+        name: user_id
+        required: true
+        type: integer
       responses:
         '200':
           description: Korisnik uspešno obrisan
+        '401':
+          description: Nedostaje ili je nevalidan token
         '403':
-          description: Pokušaj brisanja glavnog admina (Anja/Una) - zabranjeno
+          description: Pokušaj brisanja glavnog admina (Anja/Una), ili korisnik nije
+            admin
         '404':
           description: Korisnik nije pronađen
         '500':
           description: Greška na serveru
-      summary: Briše korisnika po ID-u
+      security:
+      - Bearer: []
+      summary: Briše korisnika po ID-u (SAMO ADMIN)
       tags:
-        - Users
+      - Users
     put:
       parameters:
-        - description: ID korisnika koji se menja
-          in: path
-          name: user_id
-          required: true
-          type: integer
-        - in: body
-          name: body
-          required: true
-          schema:
-            properties:
-              username:
-                example: NovoIme
-                type: string
-            type: object
+      - description: ID korisnika koji se menja
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            username:
+              example: NovoIme
+              type: string
+          type: object
       responses:
         '200':
           description: Ime uspešno promenjeno
         '400':
           description: Korisničko ime je već zauzeto
+        '401':
+          description: Nedostaje ili je nevalidan token
+        '403':
+          description: Korisnik nije admin
         '404':
           description: Korisnik nije pronađen
         '500':
           description: Greška na serveru
-      summary: Ažurira korisničko ime
+      security:
+      - Bearer: []
+      summary: Ažurira korisničko ime (SAMO ADMIN)
       tags:
-        - Users
+      - Users
   /api/watchlist/follow:
     post:
       parameters:
-        - in: body
-          name: body
-          required: true
-          schema:
-            properties:
-              repo_data:
-                description: GitHub podaci o repozitorijumu (mora sadržati full_name
-                  i html_url)
-                properties:
-                  full_name:
-                    example: facebook/react
-                    type: string
-                  html_url:
-                    example: https://github.com/facebook/react
-                    type: string
-                type: object
-              user_id:
-                example: 1
-                type: integer
-            required:
-              - user_id
-              - repo_data
-            type: object
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            repo_data:
+              description: GitHub podaci o repozitorijumu (mora sadržati full_name
+                i html_url)
+              properties:
+                full_name:
+                  example: facebook/react
+                  type: string
+                html_url:
+                  example: https://github.com/facebook/react
+                  type: string
+              type: object
+          required:
+          - repo_data
+          type: object
       responses:
         '200':
           description: Repozitorijum uspešno dodat u praćene
         '400':
           description: Nedostaju podaci
-      summary: Dodaje repozitorijum u listu praćenih
+        '401':
+          description: Nedostaje ili je nevalidan token
+      security:
+      - Bearer: []
+      summary: Dodaje repozitorijum u listu praćenih ulogovanog korisnika
       tags:
-        - Watchlist
+      - Watchlist
   /api/watchlist/unfollow:
     delete:
       parameters:
-        - description: ID korisnika
-          in: query
-          name: user_id
-          required: true
-          type: integer
-        - description: ID ili puno ime repozitorijuma koji se uklanja
-          in: query
-          name: repo_id
-          required: true
-          type: string
+      - description: ID ili puno ime repozitorijuma koji se uklanja
+        in: query
+        name: repo_id
+        required: true
+        type: string
       responses:
         '200':
           description: Uspešno uklonjeno iz praćenih
         '400':
           description: Nedostaju parametri
+        '401':
+          description: Nedostaje ili je nevalidan token
         '404':
           description: Repozitorijum nije pronađen u praćenima
-      summary: Uklanja repozitorijum iz liste praćenih
+      security:
+      - Bearer: []
+      summary: Uklanja repozitorijum iz liste praćenih ulogovanog korisnika
       tags:
-        - Watchlist
+      - Watchlist
 schemes:
-  - http
-  - https
+- http
+- https
+securityDefinitions:
+  Bearer:
+    description: 'Unesi ''Bearer <token>'' (npr: Bearer eyJhbGciOi...). Token dobijaš
+      iz odgovora na /api/auth/login.'
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: '2.0'
 tags:
-  - description: Registracija i prijava korisnika
-    name: Auth
-  - description: Upravljanje korisnicima (admin)
-    name: Users
-  - description: Pretraga GitHub korisnika i istorija pretraga
-    name: Search
-  - description: Podaci o repozitorijumima i kontributorima
-    name: Repository
-  - description: Praćeni (followed) repozitorijumi
-    name: Watchlist
-  - description: Aktivnosti (događaji) na repozitorijumima
-    name: Activity
+- description: Registracija i prijava korisnika
+  name: Auth
+- description: Upravljanje korisnicima (admin)
+  name: Users
+- description: Pretraga GitHub korisnika i istorija pretraga
+  name: Search
+- description: Podaci o repozitorijumima i kontributorima
+  name: Repository
+- description: Praćeni (followed) repozitorijumi
+  name: Watchlist
+- description: Aktivnosti (događaji) na repozitorijumima
+  name: Activity
