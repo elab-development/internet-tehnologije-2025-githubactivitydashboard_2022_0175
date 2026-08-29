@@ -96,47 +96,11 @@ def search_repos():
 @search_bp.route('/api/search/history/<int:user_id>', methods=['GET'])
 @token_required
 def get_history(user_id):
-    """
-    Istorija pretraga za konkretnog korisnika (samo vlasnik ili admin)
-    ---
-    tags:
-      - Search
-    security:
-      - Bearer: []
-    parameters:
-      - name: user_id
-        in: path
-        type: integer
-        required: true
-        description: ID korisnika čija se istorija pretraga vraća
-    responses:
-      200:
-        description: Lista prethodnih pretraga korisnika
-        schema:
-          type: array
-          items:
-            type: object
-            properties:
-              search_id:
-                type: integer
-              query:
-                type: string
-              search_type:
-                type: string
-              timestamp:
-                type: string
-              user_id:
-                type: integer
-      401:
-        description: Nedostaje ili je nevalidan token
-      403:
-        description: Pokušaj pregleda tuđe istorije bez admin ovlašćenja
-    """
-    # Korisnik sme da vidi samo SVOJU istoriju, osim ako je admin -
-    # ranije je bilo moguće da bilo ko (čak i neulogovan) vidi tuđu
-    # istoriju prostom promenom user_id u URL-u.
     current = request.current_user
-    if current['id'] != user_id and current.get('role') != 'Admin':
+
+    # Eksplicitno konvertujemo obe vrednosti u int
+    # Ovo sprečava 403 grešku zbog poređenja int i string tipova
+    if int(current['id']) != int(user_id) and current.get('role') != 'Admin':
         return jsonify({"error": "Nemate dozvolu da vidite tuđu istoriju pretraga"}), 403
 
     history = SearchService.get_user_history(user_id)
