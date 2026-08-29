@@ -79,7 +79,7 @@ const RepoView = ({ currentUserId }) => {
       setLoading(true);
       try {
         // A) Detalji o repozitorijumu
-        const res = await fetch(`${API_URL}/api/repository/details`, {
+        const res = await authFetch(`${API_URL}/api/repository/details`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: `${owner}/${repo}`, user_id: currentUserId })

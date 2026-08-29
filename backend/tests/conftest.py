@@ -33,10 +33,10 @@ def app():
     )
 
     with flask_app.app_context():
-        _db.create_all()
-        yield flask_app
+        _db.create_all() #kreiraj sve tabele od nule
+        yield flask_app #ovde se izvrsava test
         _db.session.remove()
-        _db.drop_all()
+        _db.drop_all() #brisi sve tabele
 
 
 @pytest.fixture()
